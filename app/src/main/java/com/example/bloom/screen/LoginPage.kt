@@ -1,6 +1,7 @@
-package com.example.bloom
+package com.example.bloom.screen
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -13,14 +14,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.painterResource
+import com.example.bloom.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AuthScreen() {
+fun AuthScreen(onAuthSuccess: () -> Unit = {}) {
     var isSignIn by remember { mutableStateOf(true) }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -37,22 +39,38 @@ fun AuthScreen() {
             // 🌱 Logo vert
             Box(
                 modifier = Modifier
-                    .background(Color(0xFF4CAF50), RoundedCornerShape(16.dp))
                     .padding(16.dp)
             ) {
-                Text("🌱", fontSize = 32.sp, textAlign = TextAlign.Center)
+                Image(
+                    painter = painterResource(id = R.drawable.logo_transparent),
+                    contentDescription = "Logo",
+                    modifier = Modifier
+                        .size(170.dp)
+                        .padding(end = 8.dp)
+                )
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(35.dp))
 
             // 🔁 Header Sign up / Sign in
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(Color(0x80AAAAAA), RoundedCornerShape(24.dp))
-                    .padding(4.dp),
+                    .padding(5.dp, 1.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
+                Button(
+                    onClick = { isSignIn = true },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isSignIn) Color(0xFF4CAF50) else Color.Transparent
+                    ),
+                    shape = RoundedCornerShape(17.dp)
+                ) {
+                    Text("Sign in", color = if (isSignIn) Color.Black else Color.Gray)
+                }
+
                 Button(
                     onClick = { isSignIn = false },
                     modifier = Modifier.weight(1f),
@@ -63,17 +81,6 @@ fun AuthScreen() {
                 ) {
                     Text("Sign up", color = if (!isSignIn) Color.Black else Color.Gray)
                 }
-
-                Button(
-                    onClick = { isSignIn = true },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isSignIn) Color(0xFF4CAF50) else Color.Transparent
-                    ),
-                    shape = RoundedCornerShape(20.dp)
-                ) {
-                    Text("Sign in", color = if (isSignIn) Color.Black else Color.Gray)
-                }
             }
 
             Spacer(modifier = Modifier.height(30.dp))
@@ -82,8 +89,8 @@ fun AuthScreen() {
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
-                label = { Text("Adresse e-mail") },
-                placeholder = { Text("Entrez votre adresse e-mail") },
+                label = { Text("Email Address") },
+                placeholder = { Text("enter your email") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 singleLine = true,
@@ -102,8 +109,8 @@ fun AuthScreen() {
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
-                label = { Text("Mot de passe") },
-                placeholder = { Text("Entrez votre mot de passe") },
+                label = { Text("Password") },
+                placeholder = { Text("enter your password") },
                 visualTransformation = PasswordVisualTransformation(),
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
@@ -123,8 +130,8 @@ fun AuthScreen() {
                 OutlinedTextField(
                     value = "",
                     onValueChange = {},
-                    label = { Text("Confirmez le mot de passe") },
-                    placeholder = { Text("Confirmez le mot de passe") },
+                    label = { Text("Confirm Password") },
+                    placeholder = { Text("confirm your password") },
                     visualTransformation = PasswordVisualTransformation(),
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
@@ -143,7 +150,10 @@ fun AuthScreen() {
 
             // 🟩 Bouton principal
             Button(
-                onClick = { /* TODO */ },
+                onClick = {
+                    // TODO: Ajouter la logique d'authentification
+                    onAuthSuccess() // Navigation vers Discovery
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
@@ -151,28 +161,63 @@ fun AuthScreen() {
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
             ) {
                 Text(
-                    text = if (isSignIn) "Se Connecter" else "S'inscrire",
+                    text = if (isSignIn) "Sign In" else "Sign Up",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(30.dp))
+
+            // Ligne séparatrice avec "OR"
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Divider(
+                    modifier = Modifier.weight(1f),
+                    color = Color.Gray,
+                    thickness = 1.dp
+                )
+                Text(
+                    text = "OR",
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    color = Color.Gray,
+                    fontSize = 14.sp
+                )
+                Divider(
+                    modifier = Modifier.weight(1f),
+                    color = Color.Gray,
+                    thickness = 1.dp
+                )
+            }
+
+            Spacer(modifier = Modifier.height(30.dp))
 
             // 🔘 Connexion Google (fond blanc, bordure grise)
             OutlinedButton(
-                onClick = { /* TODO */ },
+                onClick = {
+                    // TODO: Ajouter la logique Google
+                    onAuthSuccess() // Navigation vers Discovery
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
                 shape = RoundedCornerShape(12.dp),
                 border = BorderStroke(1.dp, Color.LightGray),
-                colors = ButtonDefaults.outlinedButtonColors(containerColor = Color(0x80AAAAAA)),
+                colors = ButtonDefaults.outlinedButtonColors(containerColor = Color.White),
             ) {
-                Text("🌐", fontSize = 18.sp, modifier = Modifier.padding(end = 8.dp))
+                Image(
+                    painter = painterResource(id = R.drawable.chrome),
+                    contentDescription = "Google logo",
+                    modifier = Modifier
+                        .size(24.dp)
+                        .padding(end = 8.dp)
+                )
+
                 Text(
-                    "Connexion Google",
+                    "Continue with Google",
                     fontSize = 16.sp,
                     color = Color.Black,
                     fontWeight = FontWeight.Medium
