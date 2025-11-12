@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "770676362175",
+    "project_id": "testfirebase-45e1f",
+    "storage_bucket": "testfirebase-45e1f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:770676362175:android:7faf4a9d756e8c967e2f0a",
+        "android_client_info": {
+          "package_name": "com.example.bloom"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD8fY5d8vX2u63Bi_h_vQlne0bCyXRDqAA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:770676362175:android:18f381e2dde978447e2f0a",
+        "android_client_info": {
+          "package_name": "com.rindra.firebaseservice"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD8fY5d8vX2u63Bi_h_vQlne0bCyXRDqAA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -36,7 +36,7 @@ fun AuthScreen(onAuthSuccess: () -> Unit = {}) {
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
 
-            // 🌱 Logo vert
+            // Logo
             Box(
                 modifier = Modifier
                     .padding(16.dp)
