@@ -18,14 +18,26 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.painterResource
+import androidx.navigation.NavController
 import com.example.bloom.R
+import com.example.bloom.viewmodel.AuthState
+import com.example.bloom.viewmodel.AuthViewModel
+import kotlinx.serialization.Serializable
+import androidx.compose.runtime.livedata.observeAsState
+
+@Serializable
+object LoginScreenRoute
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AuthScreen(onAuthSuccess: () -> Unit = {}) {
-    var isSignIn by remember { mutableStateOf(true) }
+fun LoginScreen(
+    navController: NavController,
+    authViewModel: AuthViewModel,
+    onGoogleSignInClick: () -> Unit = {}
+) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    val authState by authViewModel.authState.observeAsState()
 
     Box(
         modifier = Modifier
@@ -34,54 +46,28 @@ fun AuthScreen(onAuthSuccess: () -> Unit = {}) {
             .padding(24.dp),
         contentAlignment = Alignment.Center
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.fillMaxWidth()
+        ) {
 
             // Logo
-            Box(
+            Image(
+                painter = painterResource(id = R.drawable.logo_transparent),
+                contentDescription = "Logo",
                 modifier = Modifier
-                    .padding(16.dp)
-            ) {
-                Image(
-                    painter = painterResource(id = R.drawable.logo_transparent),
-                    contentDescription = "Logo",
-                    modifier = Modifier
-                        .size(170.dp)
-                        .padding(end = 8.dp)
-                )
-            }
+                    .size(170.dp)
+            )
 
             Spacer(modifier = Modifier.height(35.dp))
 
-            // 🔁 Header Sign up / Sign in
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Color(0x80AAAAAA), RoundedCornerShape(24.dp))
-                    .padding(5.dp, 1.dp),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Button(
-                    onClick = { isSignIn = true },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isSignIn) Color(0xFF4CAF50) else Color.Transparent
-                    ),
-                    shape = RoundedCornerShape(17.dp)
-                ) {
-                    Text("Sign in", color = if (isSignIn) Color.Black else Color.Gray)
-                }
-
-                Button(
-                    onClick = { isSignIn = false },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (!isSignIn) Color(0xFF4CAF50) else Color.Transparent
-                    ),
-                    shape = RoundedCornerShape(20.dp)
-                ) {
-                    Text("Sign up", color = if (!isSignIn) Color.Black else Color.Gray)
-                }
-            }
+            // Header
+            Text(
+                text = "Sign In",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.Black
+            )
 
             Spacer(modifier = Modifier.height(30.dp))
 
@@ -124,47 +110,55 @@ fun AuthScreen(onAuthSuccess: () -> Unit = {}) {
                 )
             )
 
-            // Confirmez mot de passe (si inscription)
-            if (!isSignIn) {
-                Spacer(modifier = Modifier.height(16.dp))
-                OutlinedTextField(
-                    value = "",
-                    onValueChange = {},
-                    label = { Text("Confirm Password") },
-                    placeholder = { Text("confirm your password") },
-                    visualTransformation = PasswordVisualTransformation(),
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color(0xFF4CAF50),
-                        unfocusedBorderColor = Color.Gray,
-                        cursorColor = Color(0xFF4CAF50),
-                        focusedLabelColor = Color(0xFF4CAF50)
-                    )
+            // Afficher les erreurs
+            if (authState is AuthState.Error) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = (authState as AuthState.Error).message,
+                    color = Color.Red,
+                    fontSize = 14.sp
                 )
             }
 
             Spacer(modifier = Modifier.height(30.dp))
 
-            // 🟩 Bouton principal
+            // 🟩 Bouton de connexion
             Button(
                 onClick = {
-                    // TODO: Ajouter la logique d'authentification
-                    onAuthSuccess() // Navigation vers Discovery
+                    authViewModel.login(email, password)
                 },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
                 shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
+                enabled = authState != AuthState.Loading && email.isNotEmpty() && password.isNotEmpty()
+            ) {
+                if (authState == AuthState.Loading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        color = Color.White,
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text(
+                        text = "Sign In",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Lien vers l'inscription
+            TextButton(
+                onClick = { navController.navigate(SignUpScreenRoute) }
             ) {
                 Text(
-                    text = if (isSignIn) "Sign In" else "Sign Up",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    text = "Don't have an account? Sign Up",
+                    color = Color(0xFF4CAF50)
                 )
             }
 
@@ -195,11 +189,10 @@ fun AuthScreen(onAuthSuccess: () -> Unit = {}) {
 
             Spacer(modifier = Modifier.height(30.dp))
 
-            // 🔘 Connexion Google (fond blanc, bordure grise)
+            // 🔘 Connexion Google (FONCTIONNEL)
             OutlinedButton(
                 onClick = {
-                    // TODO: Ajouter la logique Google
-                    onAuthSuccess() // Navigation vers Discovery
+                    onGoogleSignInClick()
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -225,10 +218,22 @@ fun AuthScreen(onAuthSuccess: () -> Unit = {}) {
             }
         }
     }
+
+    // Navigation automatique après authentification réussie
+    LaunchedEffect(authState) {
+        if (authState == AuthState.Authenticated) {
+            navController.navigate(PlantListScreenRoute) {
+                popUpTo(LoginScreenRoute) { inclusive = true }
+            }
+        }
+    }
 }
 
 @Preview(showBackground = true)
 @Composable
-fun AuthScreenPreview() {
-    AuthScreen()
+fun LoginScreenPreview() {
+    // Preview sans dépendances
+    Box(modifier = Modifier.fillMaxSize()) {
+        Text("Login Screen Preview")
+    }
 }
