@@ -277,13 +277,13 @@ fun SignUpScreen(
     }
 
     // Navigation automatique après inscription réussie
-    LaunchedEffect(authState) {
-        if (authState == AuthState.Authenticated) {
-            navController.navigate(PlantListScreenRoute) {
-                popUpTo(SignUpScreenRoute) { inclusive = true }
-            }
-        }
-    }
+//    LaunchedEffect(authState) {
+//        if (authState == AuthState.Authenticated) {
+//            navController.navigate(PlantListScreenRoute) {
+//                popUpTo(SignUpScreenRoute) { inclusive = true }
+//            }
+//        }
+//    }
 }
 
 @Preview(showBackground = true)

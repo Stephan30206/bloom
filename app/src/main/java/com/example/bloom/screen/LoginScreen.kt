@@ -220,13 +220,13 @@ fun LoginScreen(
     }
 
     // Navigation automatique après authentification réussie
-    LaunchedEffect(authState) {
-        if (authState == AuthState.Authenticated) {
-            navController.navigate(PlantListScreenRoute) {
-                popUpTo(LoginScreenRoute) { inclusive = true }
-            }
-        }
-    }
+//    LaunchedEffect(authState) {
+//        if (authState == AuthState.Authenticated) {
+//            navController.navigate(PlantListScreenRoute) {
+//                popUpTo(LoginScreenRoute) { inclusive = true }
+//            }
+//        }
+//    }
 }
 
 @Preview(showBackground = true)

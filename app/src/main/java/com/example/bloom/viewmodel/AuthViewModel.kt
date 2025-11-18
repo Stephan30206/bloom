@@ -25,7 +25,18 @@ class AuthViewModel : ViewModel() {
     private lateinit var googleSignInClient: GoogleSignInClient
 
     init {
+        // Vérifier immédiatement l'état d'authentification
         checkAuthStatus()
+
+        // Écouter les changements d'état d'authentification
+        auth.addAuthStateListener { firebaseAuth ->
+            val user = firebaseAuth.currentUser
+            if (user != null) {
+                _authState.postValue(AuthState.Authenticated)
+            } else {
+                _authState.postValue(AuthState.Unauthenticated)
+            }
+        }
     }
 
     fun initializeGoogleSignIn(context: Context) {
@@ -86,9 +97,9 @@ class AuthViewModel : ViewModel() {
     fun checkAuthStatus() {
         val user = auth.currentUser
         if (user == null) {
-            _authState.postValue(AuthState.Unauthenticated)
-        } else {
             _authState.postValue(AuthState.Authenticated)
+        } else {
+            _authState.postValue(AuthState.Unauthenticated)
         }
     }
 
