@@ -1,4 +1,4 @@
-package com.example.bloom.screen
+package com.example.bloom.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable

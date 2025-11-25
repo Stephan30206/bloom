@@ -1,4 +1,4 @@
-package com.example.bloom.screen
+package com.example.bloom.screens
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -25,8 +25,8 @@ import com.example.bloom.viewmodel.AuthViewModel
 import kotlinx.serialization.Serializable
 import androidx.compose.runtime.livedata.observeAsState
 
-@Serializable
-object LoginScreenRoute
+//@Serializable
+//object LoginScreenRoute
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,6 +38,7 @@ fun LoginScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     val authState by authViewModel.authState.observeAsState()
+
 
     Box(
         modifier = Modifier

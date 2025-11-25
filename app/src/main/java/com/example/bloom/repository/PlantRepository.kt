@@ -1,18 +1,29 @@
 package com.example.bloom.repository
 
-import androidx.compose.runtime.mutableStateListOf
+import com.example.bloom.database.PlantDao
 import com.example.bloom.model.Plant
+import kotlinx.coroutines.flow.Flow
 
-object PlantRepository {
-    val plants = mutableStateListOf(
-        Plant("Monstra Deliciosa", "10/06/2023")
-//        Plant("Fiddle Leaf Fig", "10/06/2023"),
-//        Plant("Snake Plant", "10/04/2023"),
-//        Plant("Pothos", "10/02/2023"),
-//        Plant("ZZ Plant", "10/02/2023")
-    )
+class PlantRepository(
+    private val plantDao: PlantDao
+) {
+    fun getPlantsByUser(userId: String): Flow<List<Plant>> {
+        return plantDao.getPlantsByUser(userId)
+    }
 
-    fun addPlant(plant: Plant) {
-        plants.add(0, plant)
+    suspend fun insertPlant(plant: Plant) {
+        plantDao.insertPlant(plant)
+    }
+
+    suspend fun deletePlant(plant: Plant) {
+        plantDao.deletePlant(plant)
+    }
+
+    suspend fun getPlantById(plantId: String): Plant? {
+        return plantDao.getPlantById(plantId)
+    }
+
+    suspend fun deleteAllPlantsForUser(userId: String) {
+        plantDao.deleteAllPlantsForUser(userId)
     }
 }

@@ -1,28 +1,30 @@
-package com.example.bloom.screen
+package com.example.bloom.screens
 
 import android.content.Context
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
+import androidx.navigation.NavHostController
+import coil.compose.AsyncImage
+import com.example.bloom.viewmodel.PlantViewModel
 import kotlinx.coroutines.delay
 import java.io.File
 import java.text.SimpleDateFormat
@@ -31,17 +33,18 @@ import java.util.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NewDiscoveryScreen(
-    onBackPressed: () -> Unit = {},
-    onSettingsPressed: () -> Unit = {},
-    onPlantIdentified: (String, String, String?) -> Unit = { _, _, _ -> }
+    navController: NavHostController,
+    plantViewModel: PlantViewModel
 ) {
     val context = LocalContext.current
     var showIdentificationProgress by remember { mutableStateOf(false) }
+    var capturedImageUri by remember { mutableStateOf<Uri?>(null) }
 
     val galleryLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.GetContent()
     ) { uri ->
         uri?.let {
+            capturedImageUri = it
             showIdentificationProgress = true
         }
     }
@@ -62,6 +65,7 @@ fun NewDiscoveryScreen(
                 "${context.packageName}.fileprovider",
                 photoFile
             )
+            capturedImageUri = photoUri
             cameraLauncher.launch(photoUri)
         } catch (e: Exception) {
             e.printStackTrace()
@@ -71,9 +75,9 @@ fun NewDiscoveryScreen(
 
     LaunchedEffect(showIdentificationProgress) {
         if (showIdentificationProgress) {
-            delay(2000)
-            val currentDate = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date())
-            onPlantIdentified("Plante Identifiée", currentDate, null)
+            delay(2000) // Simulation du traitement AI
+            // TODO: Intégrer la vraie logique d'identification avec PlantViewModel
+            navController.popBackStack()
             showIdentificationProgress = false
         }
     }
@@ -89,18 +93,10 @@ fun NewDiscoveryScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBackPressed) {
+                    IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back"
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(onClick = onSettingsPressed) {
-                        Icon(
-                            imageVector = Icons.Filled.Settings,
-                            contentDescription = "Settings"
                         )
                     }
                 }
@@ -115,11 +111,12 @@ fun NewDiscoveryScreen(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // Aperçu de l'image
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(220.dp)
-                    .background(Color(0xFFF5F6F8), RoundedCornerShape(10.dp)),
+                    .padding(bottom = 32.dp),
                 contentAlignment = Alignment.Center
             ) {
                 if (showIdentificationProgress) {
@@ -134,6 +131,15 @@ fun NewDiscoveryScreen(
                             fontSize = 14.sp
                         )
                     }
+                } else if (capturedImageUri != null) {
+                    AsyncImage(
+                        model = capturedImageUri,
+                        contentDescription = "Captured plant",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(10.dp)),
+                        contentScale = ContentScale.Crop
+                    )
                 } else {
                     Text(
                         text = "Image Preview",
@@ -145,6 +151,7 @@ fun NewDiscoveryScreen(
 
             Spacer(modifier = Modifier.height(60.dp))
 
+            // Bouton Prendre une photo
             Button(
                 onClick = takePhoto,
                 enabled = !showIdentificationProgress,
@@ -169,6 +176,7 @@ fun NewDiscoveryScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
+            // Bouton Galerie
             OutlinedButton(
                 onClick = { galleryLauncher.launch("image/*") },
                 enabled = !showIdentificationProgress,
@@ -201,10 +209,4 @@ private fun createImageFile(context: Context): File {
         ".jpg",
         storageDir
     )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun NewDiscoveryScreenPreview() {
-    NewDiscoveryScreen()
 }

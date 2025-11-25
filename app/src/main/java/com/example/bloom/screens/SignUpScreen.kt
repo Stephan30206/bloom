@@ -1,4 +1,4 @@
-package com.example.bloom.screen
+package com.example.bloom.screens
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -25,8 +25,8 @@ import com.example.bloom.viewmodel.AuthViewModel
 import kotlinx.serialization.Serializable
 import androidx.compose.runtime.livedata.observeAsState
 
-@Serializable
-object SignUpScreenRoute
+//@Serializable
+//object SignUpScreenRoute
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

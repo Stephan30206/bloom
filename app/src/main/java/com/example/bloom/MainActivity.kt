@@ -1,29 +1,28 @@
 package com.example.bloom
 
-import android.content.Intent
+import android.Manifest
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
 import androidx.activity.viewModels
-import com.example.bloom.screen.MainScreen
+import androidx.compose.material3.Surface
+import androidx.lifecycle.ViewModelProvider
+import com.example.bloom.database.PlantDatabase
+import com.example.bloom.repository.PlantRepository
+import com.example.bloom.screens.MainScreen
+import com.example.bloom.service.GeminiAIService
 import com.example.bloom.ui.theme.BloomTheme
 import com.example.bloom.viewmodel.AuthViewModel
-import androidx.compose.runtime.livedata.observeAsState
-import com.example.bloom.viewmodel.AuthState
+import com.example.bloom.viewmodel.PlantViewModel
+import com.example.bloom.viewmodel.PlantViewModelFactory
 
 class MainActivity : ComponentActivity() {
 
-//    private lateinit var authViewModel: AuthViewModel
     private val authViewModel: AuthViewModel by viewModels()
+    private lateinit var plantViewModel: PlantViewModel
 
-    // Contract pour le résultat de Google Sign-In
     private val googleSignInLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -32,34 +31,31 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+
+        // Request notification permission
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 0)
+        }
+
+        // Initialisation du ViewModel avec Factory
+        val plantDatabase = PlantDatabase.getInstance(this)
+        val plantRepository = PlantRepository(plantDatabase.plantDao())
+        val geminiAIService = GeminiAIService()
+
+        plantViewModel = ViewModelProvider(
+            this,
+            PlantViewModelFactory(plantRepository, geminiAIService)
+        )[PlantViewModel::class.java]
+
+        // Initialiser Google Sign-In
+        authViewModel.initializeGoogleSignIn(this)
 
         setContent {
             BloomTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    // Initialiser le ViewModel
-//                    authViewModel = viewModel()
-                    val authState by authViewModel.authState.observeAsState()
-
-                    // Initialiser Google Sign-In
-                    LaunchedEffect(authState) {
-                        when (authState) {
-                            is AuthState.Authenticated -> {
-                                // Navigation automatique si déjà connecté
-                                // (géré dans MainScreen maintenant)
-                            }
-                            else -> {
-                                // Initialiser Google Sign-In
-                                authViewModel.initializeGoogleSignIn(this@MainActivity)
-                            }
-                        }
-                    }
-
+                Surface {
                     MainScreen(
                         authViewModel = authViewModel,
+                        plantViewModel = plantViewModel,
                         onGoogleSignInClick = {
                             val signInIntent = authViewModel.getGoogleSignInIntent()
                             googleSignInLauncher.launch(signInIntent)
