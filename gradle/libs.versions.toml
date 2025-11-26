@@ -33,6 +33,7 @@ workmanager = "2.11.0"
 lottie = "6.7.1"
 firebaseVertexai = "16.5.0"
 firebaseCrashlyticsBuildtools = "3.0.6"
+firebaseAi = "16.0.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -101,6 +102,8 @@ androidx-work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx"
 lottie-compose = { group = "com.airbnb.android", name = "lottie-compose", version.ref = "lottie" }
 firebase-vertexai = { group = "com.google.firebase", name = "firebase-vertexai", version.ref = "firebaseVertexai" }
 firebase-crashlytics-buildtools = { group = "com.google.firebase", name = "firebase-crashlytics-buildtools", version.ref = "firebaseCrashlyticsBuildtools" }
+
+firebase-ai={group="com.google.firebase", name="firebase-ai", version.ref = "firebaseAi"}
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

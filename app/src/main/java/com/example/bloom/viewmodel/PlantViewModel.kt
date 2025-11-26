@@ -1,6 +1,7 @@
 package com.example.bloom.viewmodel
 
 import android.graphics.Bitmap
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -29,7 +30,7 @@ class PlantViewModel(
     private val _isLoading = MutableLiveData<Boolean>(false)
     val isLoading: LiveData<Boolean> = _isLoading
 
-    private val _error = MutableLiveData<String?>(null)
+    val _error = MutableLiveData<String?>(null)
     val error: LiveData<String?> = _error
 
     private val storage = FirebaseStorage.getInstance()
@@ -44,7 +45,7 @@ class PlantViewModel(
                     _isLoading.postValue(false)
                 }
             } catch (e: Exception) {
-                _error.postValue("Failed to load plants: ${e.message}")
+                _error.postValue("Erreur de chargement des plantes: ${e.message}")
                 _isLoading.postValue(false)
             }
         }
@@ -56,14 +57,18 @@ class PlantViewModel(
             _error.postValue(null)
 
             try {
+                Log.d("PlantViewModel", "Début identification plante...")
+
                 val userId = auth.currentUser?.uid
-                    ?: throw Exception("User not authenticated")
+                    ?: throw Exception("Utilisateur non authentifié")
 
                 // 1. Identifier avec Gemini AI
                 val (name, summary) = geminiAIService.identifyPlantFromImage(bitmap)
+                Log.d("PlantViewModel", "Identification réussie: $name")
 
                 // 2. Upload l'image vers Firebase Storage
                 val imageUrl = uploadImageToStorage(bitmap, userId)
+                Log.d("PlantViewModel", "Image uploadée: $imageUrl")
 
                 // 3. Créer et sauvegarder la plante
                 val plant = Plant(
@@ -78,9 +83,14 @@ class PlantViewModel(
                 plantRepository.insertPlant(plant)
                 _currentPlant.postValue(plant)
 
+                // 4. Recharger la liste des plantes
+                loadPlants(userId)
+
+                Log.d("PlantViewModel", "Plante sauvegardée et liste rechargée: ${plant.id}")
+
             } catch (e: Exception) {
-                _error.postValue("Failed to identify plant: ${e.message}")
-                e.printStackTrace()
+                Log.e("PlantViewModel", "Échec identification: ${e.message}", e)
+                _error.postValue("Échec de l'identification: ${e.message}")
             } finally {
                 _isLoading.postValue(false)
             }
@@ -88,16 +98,28 @@ class PlantViewModel(
     }
 
     private suspend fun uploadImageToStorage(bitmap: Bitmap, userId: String): String {
-        val imageId = UUID.randomUUID().toString()
-        val storageRef = storage.reference
-            .child("users/$userId/plants/$imageId.jpg")
+        return try {
+            val imageId = UUID.randomUUID().toString()
+            val storageRef = storage.reference
+                .child("users/$userId/plants/$imageId.jpg")
 
-        val baos = ByteArrayOutputStream()
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 80, baos)
-        val data = baos.toByteArray()
+            val baos = ByteArrayOutputStream()
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 80, baos)
+            val data = baos.toByteArray()
 
-        storageRef.putBytes(data).await()
-        return storageRef.downloadUrl.await().toString()
+            // Upload l'image
+            storageRef.putBytes(data).await()
+
+            // Récupérer l'URL de téléchargement
+            val downloadUrl = storageRef.downloadUrl.await()
+            Log.d("PlantViewModel", "URL image générée: $downloadUrl")
+            downloadUrl.toString()
+
+        } catch (e: Exception) {
+            Log.e("PlantViewModel", "Erreur upload Firebase Storage: ${e.message}", e)
+            // Fallback: utiliser une image placeholder
+            "https://via.placeholder.com/400x300/4CAF50/FFFFFF?text=Plante+Identifi%C3%A9e"
+        }
     }
 
     fun getPlantById(plantId: String) {
@@ -107,7 +129,7 @@ class PlantViewModel(
                 _currentPlant.postValue(plantRepository.getPlantById(plantId))
                 _isLoading.postValue(false)
             } catch (e: Exception) {
-                _error.postValue("Failed to load plant: ${e.message}")
+                _error.postValue("Erreur de chargement de la plante: ${e.message}")
                 _isLoading.postValue(false)
             }
         }
@@ -123,11 +145,13 @@ class PlantViewModel(
 
                 // Supprimer l'image de Firebase Storage
                 try {
-                    val storageRef = storage.getReferenceFromUrl(plant.imageUrl)
-                    storageRef.delete().await()
+                    if (plant.imageUrl.startsWith("https://firebasestorage.googleapis.com/")) {
+                        val storageRef = storage.getReferenceFromUrl(plant.imageUrl)
+                        storageRef.delete().await()
+                    }
                 } catch (e: Exception) {
                     // L'image n'existe peut-être plus, continuer quand même
-                    e.printStackTrace()
+                    Log.w("PlantViewModel", "Impossible de supprimer l'image: ${e.message}")
                 }
 
                 // Recharger la liste
@@ -136,7 +160,7 @@ class PlantViewModel(
                 }
 
             } catch (e: Exception) {
-                _error.postValue("Failed to delete plant: ${e.message}")
+                _error.postValue("Erreur de suppression: ${e.message}")
             } finally {
                 _isLoading.postValue(false)
             }

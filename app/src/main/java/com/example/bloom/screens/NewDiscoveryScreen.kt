@@ -1,7 +1,10 @@
 package com.example.bloom.screens
 
+import android.Manifest
 import android.content.Context
+import android.graphics.BitmapFactory
 import android.net.Uri
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
@@ -12,6 +15,7 @@ import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -19,33 +23,60 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import com.example.bloom.viewmodel.PlantViewModel
-import kotlinx.coroutines.delay
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberPermissionState
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
 fun NewDiscoveryScreen(
     navController: NavHostController,
     plantViewModel: PlantViewModel
 ) {
     val context = LocalContext.current
-    var showIdentificationProgress by remember { mutableStateOf(false) }
     var capturedImageUri by remember { mutableStateOf<Uri?>(null) }
+
+    // États du ViewModel
+    val isLoading by plantViewModel.isLoading.observeAsState(false)
+    val error by plantViewModel.error.observeAsState()
+    val currentPlant by plantViewModel.currentPlant.observeAsState()
+
+    // Permission caméra
+    val cameraPermissionState = rememberPermissionState(
+        permission = Manifest.permission.CAMERA
+    )
 
     val galleryLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.GetContent()
     ) { uri ->
         uri?.let {
             capturedImageUri = it
-            showIdentificationProgress = true
+            // Convertir URI en Bitmap et identifier
+            try {
+                context.contentResolver.openInputStream(it)?.use { inputStream ->
+                    val bitmap = BitmapFactory.decodeStream(inputStream)
+                    bitmap?.let { bmp ->
+                        plantViewModel.identifyAndSavePlant(bmp)
+                    } ?: run {
+                        plantViewModel.clearError()
+                        plantViewModel._error.postValue("Impossible de charger l'image sélectionnée")
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("Discovery", "Erreur chargement image: ${e.message}")
+                plantViewModel.clearError()
+                plantViewModel._error.postValue("Erreur lors du chargement de l'image")
+            }
         }
     }
 
@@ -53,32 +84,65 @@ fun NewDiscoveryScreen(
         ActivityResultContracts.TakePicture()
     ) { success ->
         if (success) {
-            showIdentificationProgress = true
+            capturedImageUri?.let { uri ->
+                // Convertir URI en Bitmap et identifier
+                try {
+                    context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                        val bitmap = BitmapFactory.decodeStream(inputStream)
+                        bitmap?.let { bmp ->
+                            plantViewModel.identifyAndSavePlant(bmp)
+                        } ?: run {
+                            plantViewModel.clearError()
+                            plantViewModel._error.postValue("Impossible de charger la photo")
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e("Discovery", "Erreur chargement photo: ${e.message}")
+                    plantViewModel.clearError()
+                    plantViewModel._error.postValue("Erreur lors du chargement de la photo")
+                }
+            }
+        } else {
+            plantViewModel.clearError()
+            plantViewModel._error.postValue("Échec de la prise de photo")
         }
     }
 
     val takePhoto = {
-        try {
-            val photoFile = createImageFile(context)
-            val photoUri = FileProvider.getUriForFile(
-                context,
-                "${context.packageName}.fileprovider",
-                photoFile
-            )
-            capturedImageUri = photoUri
-            cameraLauncher.launch(photoUri)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            galleryLauncher.launch("image/*")
+        if (cameraPermissionState.status.isGranted) {
+            try {
+                val photoFile = createImageFile(context)
+                val photoUri = FileProvider.getUriForFile(
+                    context,
+                    "${context.packageName}.fileprovider",
+                    photoFile
+                )
+                capturedImageUri = photoUri
+                cameraLauncher.launch(photoUri)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                // Fallback vers la galerie
+                galleryLauncher.launch("image/*")
+            }
+        } else {
+            // Demander la permission
+            cameraPermissionState.launchPermissionRequest()
         }
     }
 
-    LaunchedEffect(showIdentificationProgress) {
-        if (showIdentificationProgress) {
-            delay(2000) // Simulation du traitement AI
-            // TODO: Intégrer la vraie logique d'identification avec PlantViewModel
+    // Navigation automatique après identification réussie
+    LaunchedEffect(currentPlant) {
+        if (currentPlant != null && !isLoading) {
+            Log.d("Discovery", "Identification réussie, navigation vers la liste")
+            // Retour à l'écran précédent
             navController.popBackStack()
-            showIdentificationProgress = false
+        }
+    }
+
+    // Afficher les erreurs
+    LaunchedEffect(error) {
+        error?.let {
+            Log.e("Discovery", "Erreur: $it")
         }
     }
 
@@ -87,16 +151,21 @@ fun NewDiscoveryScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "New Discovery",
+                        text = "Nouvelle Découverte",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Medium
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(
+                        onClick = {
+                            if (!isLoading) navController.popBackStack()
+                        },
+                        enabled = !isLoading
+                    ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = "Retour"
                         )
                     }
                 }
@@ -119,14 +188,14 @@ fun NewDiscoveryScreen(
                     .padding(bottom = 32.dp),
                 contentAlignment = Alignment.Center
             ) {
-                if (showIdentificationProgress) {
+                if (isLoading) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         CircularProgressIndicator(color = Color(0xFF4CAF50))
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = "Identifying plant...",
+                            text = "Identification en cours...",
                             color = Color.Black,
                             fontSize = 14.sp
                         )
@@ -134,18 +203,23 @@ fun NewDiscoveryScreen(
                 } else if (capturedImageUri != null) {
                     AsyncImage(
                         model = capturedImageUri,
-                        contentDescription = "Captured plant",
+                        contentDescription = "Plante capturée",
                         modifier = Modifier
                             .fillMaxSize()
                             .clip(RoundedCornerShape(10.dp)),
                         contentScale = ContentScale.Crop
                     )
                 } else {
-                    Text(
-                        text = "Image Preview",
-                        fontSize = 14.sp,
-                        color = Color.Gray
-                    )
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "Prenez une photo pour identifier la plante",
+                            fontSize = 14.sp,
+                            color = Color.Gray,
+                            textAlign = TextAlign.Center
+                        )
+                    }
                 }
             }
 
@@ -154,7 +228,7 @@ fun NewDiscoveryScreen(
             // Bouton Prendre une photo
             Button(
                 onClick = takePhoto,
-                enabled = !showIdentificationProgress,
+                enabled = !isLoading,
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -168,7 +242,7 @@ fun NewDiscoveryScreen(
                     modifier = Modifier.padding(end = 8.dp)
                 )
                 Text(
-                    text = "Take a Photo",
+                    text = "Prendre une Photo",
                     fontSize = 16.sp,
                     color = Color.White
                 )
@@ -178,8 +252,10 @@ fun NewDiscoveryScreen(
 
             // Bouton Galerie
             OutlinedButton(
-                onClick = { galleryLauncher.launch("image/*") },
-                enabled = !showIdentificationProgress,
+                onClick = {
+                    if (!isLoading) galleryLauncher.launch("image/*")
+                },
+                enabled = !isLoading,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),
@@ -192,9 +268,29 @@ fun NewDiscoveryScreen(
                     modifier = Modifier.padding(end = 8.dp)
                 )
                 Text(
-                    text = "Select from Gallery",
+                    text = "Choisir depuis la Galerie",
                     fontSize = 16.sp,
                     color = Color.Black
+                )
+            }
+
+            // Afficher les erreurs
+            error?.let { errorMessage ->
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = when {
+                        errorMessage.contains("Object does not exist") ->
+                            "Erreur de connexion. Vérifiez votre internet."
+                        errorMessage.contains("storage") || errorMessage.contains("upload") ->
+                            "Problème de sauvegarde. Réessayez."
+                        errorMessage.contains("authentifié") ->
+                            "Vous devez être connecté pour identifier des plantes"
+                        else -> errorMessage
+                    },
+                    color = Color.Red,
+                    fontSize = 14.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 16.dp)
                 )
             }
         }

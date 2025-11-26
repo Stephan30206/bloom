@@ -105,6 +105,7 @@ dependencies {
 
     // GEMINI AI
     implementation(libs.google.generative.ai)
+    implementation(libs.firebase.ai)
 
     // CAMERA X
     implementation(libs.androidx.camera.camera2)
