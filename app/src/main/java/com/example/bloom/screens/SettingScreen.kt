@@ -28,7 +28,7 @@ fun SettingPage(
     onShare: () -> Unit = {},
     onContact: () -> Unit = {}
 ) {
-    Scaffold(        topBar = {
+    Scaffold(topBar = {
             TopAppBar(
                 title = { Text("Paramètres", fontWeight = FontWeight.Bold) },
                 navigationIcon = {

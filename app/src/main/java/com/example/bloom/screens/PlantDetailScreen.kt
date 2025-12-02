@@ -1,6 +1,6 @@
 package com.example.bloom.screens
 
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -18,10 +18,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import coil.compose.rememberAsyncImagePainter
-import com.example.bloom.navigation.Screen
+import coil.compose.SubcomposeAsyncImage
 import com.example.bloom.viewmodel.PlantViewModel
-import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -69,13 +67,52 @@ fun PlantDetailScreen(
                     .padding(paddingValues)
                     .verticalScroll(rememberScrollState())
             ) {
-                Image(
-                    painter = rememberAsyncImagePainter(File(plant.imageUrl)),
+                // Image avec gestion du chargement
+                SubcomposeAsyncImage(
+                    model = plant.imageUrl,
                     contentDescription = plant.name,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(300.dp),
-                    contentScale = ContentScale.Crop
+                    contentScale = ContentScale.Crop,
+                    loading = {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.LightGray),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(
+                                color = Color(0xFF2E7D32),
+                                modifier = Modifier.size(48.dp)
+                            )
+                        }
+                    },
+                    error = {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color(0xFFE8F5E9)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    "Image non disponible",
+                                    color = Color.Gray,
+                                    fontSize = 14.sp
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    plant.name,
+                                    color = Color(0xFF2E7D32),
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))

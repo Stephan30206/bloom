@@ -9,12 +9,12 @@ import androidx.lifecycle.viewModelScope
 import com.example.bloom.model.Plant
 import com.example.bloom.repository.PlantRepository
 import com.example.bloom.service.GeminiAIService
+import com.example.bloom.service.SupabaseStorageService
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
-import java.io.ByteArrayOutputStream
-import java.util.UUID
+import java.io.File
+import java.io.FileOutputStream
+import java.io.OutputStream
 
 class PlantViewModel(
     private val plantRepository: PlantRepository,
@@ -33,7 +33,7 @@ class PlantViewModel(
     val _error = MutableLiveData<String?>(null)
     val error: LiveData<String?> = _error
 
-    private val storage = FirebaseStorage.getInstance()
+    private val supabaseStorageService = SupabaseStorageService()
     private val auth = FirebaseAuth.getInstance()
 
     fun loadPlants(userId: String) {
@@ -60,17 +60,25 @@ class PlantViewModel(
                 Log.d("PlantViewModel", "Début identification plante...")
 
                 val userId = auth.currentUser?.uid
-                    ?: throw Exception("Utilisateur non authentifié")
+                    ?: throw Exception("Vous devez être connecté")
 
-                // 1. Identifier avec Gemini AI
+                // 1. Convertir Bitmap en File
+                val imageFile = bitmapToFile(bitmap, userId)
+                Log.d("PlantViewModel", "Fichier créé: ${imageFile.absolutePath}")
+
+                // 2. Identifier avec Gemini AI
                 val (name, summary) = geminiAIService.identifyPlantFromImage(bitmap)
                 Log.d("PlantViewModel", "Identification réussie: $name")
 
-                // 2. Upload l'image vers Firebase Storage
-                val imageUrl = uploadImageToStorage(bitmap, userId)
+                // 3. Upload vers Supabase (CORRIGÉ: passer le File et plantName)
+                val imageUrl = supabaseStorageService.uploadImage(
+                    imageFile = imageFile,
+                    userId = userId,
+                    plantName = name
+                )
                 Log.d("PlantViewModel", "Image uploadée: $imageUrl")
 
-                // 3. Créer et sauvegarder la plante
+                // 4. Créer et sauvegarder la plante
                 val plant = Plant(
                     id = Plant.generateId(),
                     name = name,
@@ -83,43 +91,35 @@ class PlantViewModel(
                 plantRepository.insertPlant(plant)
                 _currentPlant.postValue(plant)
 
-                // 4. Recharger la liste des plantes
+                // 5. Recharger la liste
                 loadPlants(userId)
 
-                Log.d("PlantViewModel", "Plante sauvegardée et liste rechargée: ${plant.id}")
+                Log.d("PlantViewModel", "Plante sauvegardée: ${plant.id}")
+
+                // 6. Nettoyer le fichier temporaire
+                imageFile.delete()
 
             } catch (e: Exception) {
-                Log.e("PlantViewModel", "Échec identification: ${e.message}", e)
-                _error.postValue("Échec de l'identification: ${e.message}")
+                Log.e("PlantViewModel", "Échec: ${e.message}", e)
+                _error.postValue("Erreur: ${e.localizedMessage}")
             } finally {
                 _isLoading.postValue(false)
             }
         }
     }
 
-    private suspend fun uploadImageToStorage(bitmap: Bitmap, userId: String): String {
-        return try {
-            val imageId = UUID.randomUUID().toString()
-            val storageRef = storage.reference
-                .child("users/$userId/plants/$imageId.jpg")
-
-            val baos = ByteArrayOutputStream()
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 80, baos)
-            val data = baos.toByteArray()
-
-            // Upload l'image
-            storageRef.putBytes(data).await()
-
-            // Récupérer l'URL de téléchargement
-            val downloadUrl = storageRef.downloadUrl.await()
-            Log.d("PlantViewModel", "URL image générée: $downloadUrl")
-            downloadUrl.toString()
-
+    // Fonction pour convertir Bitmap en File
+    private fun bitmapToFile(bitmap: Bitmap, userId: String): File {
+        val file = File.createTempFile("plant_${userId}_", ".jpg")
+        try {
+            val stream: OutputStream = FileOutputStream(file)
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 85, stream)
+            stream.flush()
+            stream.close()
         } catch (e: Exception) {
-            Log.e("PlantViewModel", "Erreur upload Firebase Storage: ${e.message}", e)
-            // Fallback: utiliser une image placeholder
-            "https://via.placeholder.com/400x300/4CAF50/FFFFFF?text=Plante+Identifi%C3%A9e"
+            Log.e("PlantViewModel", "Erreur conversion bitmap: ${e.message}")
         }
+        return file
     }
 
     fun getPlantById(plantId: String) {
@@ -129,7 +129,7 @@ class PlantViewModel(
                 _currentPlant.postValue(plantRepository.getPlantById(plantId))
                 _isLoading.postValue(false)
             } catch (e: Exception) {
-                _error.postValue("Erreur de chargement de la plante: ${e.message}")
+                _error.postValue("Erreur de chargement: ${e.message}")
                 _isLoading.postValue(false)
             }
         }
@@ -140,24 +140,15 @@ class PlantViewModel(
             try {
                 _isLoading.postValue(true)
 
-                // Supprimer de la base de données
+                // 1. Supprimer de la base de données
                 plantRepository.deletePlant(plant)
 
-                // Supprimer l'image de Firebase Storage
-                try {
-                    if (plant.imageUrl.startsWith("https://firebasestorage.googleapis.com/")) {
-                        val storageRef = storage.getReferenceFromUrl(plant.imageUrl)
-                        storageRef.delete().await()
-                    }
-                } catch (e: Exception) {
-                    // L'image n'existe peut-être plus, continuer quand même
-                    Log.w("PlantViewModel", "Impossible de supprimer l'image: ${e.message}")
-                }
+                // 2. Optionnel: Ajouter une fonction deleteImage dans SupabaseStorageService
+                // si tu veux supprimer l'image de Supabase aussi
+                // supabaseStorageService.deleteImage(plant.imageUrl)
 
-                // Recharger la liste
-                plant.userId.let { userId ->
-                    loadPlants(userId)
-                }
+                // 3. Recharger la liste
+                loadPlants(plant.userId)
 
             } catch (e: Exception) {
                 _error.postValue("Erreur de suppression: ${e.message}")
@@ -165,6 +156,12 @@ class PlantViewModel(
                 _isLoading.postValue(false)
             }
         }
+    }
+
+    // Ajoute cette fonction si tu veux supprimer les images
+    suspend fun deleteImageFromSupabase(imageUrl: String) {
+        // Tu peux implémenter cette fonction dans SupabaseStorageService
+        // puis l'appeler ici
     }
 
     fun clearError() {

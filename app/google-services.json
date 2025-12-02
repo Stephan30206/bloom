@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "968584033226",
-    "project_id": "boom-89beb",
-    "storage_bucket": "boom-89beb.firebasestorage.app"
+    "project_number": "882160540386",
+    "project_id": "bloom-1e81f",
+    "storage_bucket": "bloom-1e81f.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:968584033226:android:e79ea40f3ae83deea95533",
+        "mobilesdk_app_id": "1:882160540386:android:2154fc51fad265d6c41cbb",
         "android_client_info": {
           "package_name": "com.example.bloom"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDSuSleDHqb_pw8c-C0HQdISZ-ZnSuEuak"
+          "current_key": "AIzaSyBTMOGlc9IzikDni7Y0hpsv5yfWtByrWI0"
         }
       ],
       "services": {

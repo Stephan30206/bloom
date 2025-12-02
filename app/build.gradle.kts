@@ -23,6 +23,10 @@ android {
         ndk {
             abiFilters += listOf("arm64-v8a", "armeabi-v7a")
         }
+
+        // Ajout de la clé API depuis gradle.properties
+        val geminiApiKey = project.properties["GEMINI_API_KEY"] as? String ?: ""
+        buildConfigField("String", "GEMINI_API_KEY", "\"$geminiApiKey\"")
     }
 
     buildTypes {
@@ -64,12 +68,37 @@ android {
 }
 
 dependencies {
-    // ANDROIDX BASE
+    // ========== SUPABASE (VERSIONS CORRECTES) ==========
+    implementation("io.github.jan-tennert.supabase:gotrue-kt:1.4.0")
+    implementation("io.github.jan-tennert.supabase:storage-kt:1.4.0")
+    implementation("io.github.jan-tennert.supabase:postgrest-kt:1.4.0")
+    implementation("io.github.jan-tennert.supabase:realtime-kt:1.4.0")
+
+    // Ktor client requis (version compatible)
+    implementation("io.ktor:ktor-client-okhttp:2.3.7")
+    implementation("io.ktor:ktor-client-content-negotiation:2.3.7")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.7")
+
+    // OkHttp pour Supabase
+    implementation("com.squareup.okhttp3:okhttp:5.0.0-alpha.11")
+
+    // Serialization JSON
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+
+    // ========== FIREBASE ==========
+    implementation("com.google.firebase:firebase-auth-ktx:23.2.1")
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth)
+    implementation(libs.firebase.firestore)
+    implementation(libs.firebase.storage)
+    implementation(libs.play.services.auth)  // Google Login
+
+    // ========== ANDROIDX BASE ==========
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
 
-    // COMPOSE
+    // ========== COMPOSE ==========
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
@@ -80,60 +109,43 @@ dependencies {
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.compose.runtime.livedata)
 
-    // NAVIGATION
+    // ========== NAVIGATION ==========
     implementation(libs.navigation.compose)
 
-    // ACCOMPANIST
+    // ========== ACCOMPANIST ==========
     implementation(libs.accompanist.permissions)
 
-    // VIEWMODEL COMPOSE
+    // ========== VIEWMODEL COMPOSE ==========
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
 
-    // SERIALIZATION
-    implementation(libs.kotlinx.serialization.json)
-
-    // FIREBASE
-    implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.auth)
-    implementation(libs.firebase.firestore)
-    implementation(libs.firebase.storage)
-    implementation(libs.firebase.vertexai)
-
-    // GOOGLE LOGIN
-    implementation(libs.play.services.auth)
-
-    // GEMINI AI
-    implementation(libs.google.generative.ai)
-    implementation(libs.firebase.ai)
-
-    // CAMERA X
+    // ========== CAMERA X ==========
     implementation(libs.androidx.camera.camera2)
     implementation(libs.androidx.camera.lifecycle)
     implementation(libs.androidx.camera.view)
 
-    // ROOM
+    // ========== ROOM ==========
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     kapt("androidx.room:room-compiler:${libs.versions.room.get()}")
 
-    // COROUTINES
+    // ========== COROUTINES ==========
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.coroutines.play.services)
 
-    // COIL
+    // ========== COIL ==========
     implementation(libs.coil.compose)
 
-    // DATASTORE
+    // ========== DATASTORE ==========
     implementation(libs.androidx.datastore.preferences)
 
-    // WORKMANAGER
+    // ========== WORKMANAGER ==========
     implementation(libs.androidx.work.runtime.ktx)
 
-    // LOTTIE
+    // ========== LOTTIE ==========
     implementation(libs.lottie.compose)
 
-    // TESTS
+    // ========== TESTS ==========
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

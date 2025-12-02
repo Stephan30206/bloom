@@ -3,6 +3,7 @@ package com.example.bloom
 import android.Manifest
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -49,6 +50,7 @@ class MainActivity : ComponentActivity() {
 
         // Initialiser Google Sign-In
         authViewModel.initializeGoogleSignIn(this)
+        initSupabase()
 
         setContent {
             BloomTheme {
@@ -64,5 +66,11 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    private fun initSupabase() {
+        // Ceci initialise le client Supabase
+        val client = SupabaseClient.client
+        Log.d("MainActivity", "Supabase initialisé")
     }
 }

@@ -22,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
+import coil.compose.SubcomposeAsyncImage
 import coil.compose.rememberAsyncImagePainter
 import com.example.bloom.navigation.Screen
 import com.example.bloom.viewmodel.AuthViewModel
@@ -151,15 +152,42 @@ fun PlantCard(plant: com.example.bloom.model.Plant, onClick: () -> Unit) {
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Column {
-            // Afficher l'image depuis l'URL Firebase Storage
+            // Utiliser SubcomposeAsyncImage pour un meilleur contrôle
             if (plant.imageUrl.isNotEmpty()) {
-                Image(
-                    painter = rememberAsyncImagePainter(plant.imageUrl),
+                SubcomposeAsyncImage(
+                    model = plant.imageUrl,
                     contentDescription = plant.name,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(200.dp),
-                    contentScale = ContentScale.Crop
+                    contentScale = ContentScale.Crop,
+                    loading = {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.LightGray),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(
+                                color = Color(0xFF2E7D32),
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
+                    },
+                    error = {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.LightGray),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                "Image non disponible",
+                                color = Color.Gray,
+                                fontSize = 12.sp
+                            )
+                        }
+                    }
                 )
             } else {
                 // Placeholder si pas d'image

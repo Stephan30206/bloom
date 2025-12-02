@@ -10,16 +10,10 @@
               <option name="connection">
                 <ConnectionSetting>
                   <option name="appId" value="com.example.bloom" />
-                  <option name="mobileSdkAppId" value="1:968584033226:android:e79ea40f3ae83deea95533" />
-                  <option name="projectId" value="boom-89beb" />
-                  <option name="projectNumber" value="968584033226" />
+                  <option name="mobileSdkAppId" value="1:882160540386:android:2154fc51fad265d6c41cbb" />
+                  <option name="projectId" value="bloom-1e81f" />
+                  <option name="projectNumber" value="882160540386" />
                 </ConnectionSetting>
-              </option>
-              <option name="failureTypes">
-                <list>
-                  <option value="ANR" />
-                  <option value="NON_FATAL" />
-                </list>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />
               <option name="timeIntervalDays" value="THIRTY_DAYS" />
