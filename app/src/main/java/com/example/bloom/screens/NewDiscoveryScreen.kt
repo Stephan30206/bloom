@@ -291,6 +291,8 @@ fun NewDiscoveryScreen(
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
                     text = when {
+                        errorMessage.contains("pas une plante", ignoreCase = true) ->
+                            "❌ Cette image ne semble pas contenir une plante.\nVeuillez prendre une photo d'une vraie plante ou fleur."
                         errorMessage.contains("Object does not exist") ->
                             "Erreur de connexion. Vérifiez votre internet."
                         errorMessage.contains("storage") || errorMessage.contains("upload") ->
@@ -299,11 +301,29 @@ fun NewDiscoveryScreen(
                             "Vous devez être connecté pour identifier des plantes"
                         else -> errorMessage
                     },
-                    color = Color.Red,
+                    color = if (errorMessage.contains("pas une plante")) Color(0xFFD32F2F) else Color.Red,
                     fontSize = 14.sp,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )
+
+                // Afficher un bouton pour réessayer seulement quand ce n'est pas une plante
+                if (errorMessage.contains("pas une plante", ignoreCase = true)) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(
+                        onClick = {
+                            plantViewModel.clearError()
+                            capturedImageUri = null
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2196F3)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(45.dp),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("Prendre une autre photo")
+                    }
+                }
             }
         }
     }

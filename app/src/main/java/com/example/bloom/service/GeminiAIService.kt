@@ -31,20 +31,27 @@ class GeminiAIService {
                             put("parts", JSONArray().apply {
                                 put(JSONObject().apply {
                                     put("text", """
-                                        Your task is to identify the plant or flower shown in the image. 
-                                        You must ONLY identify plants or flowers.
+                                        Your task is to identify ONLY plants or flowers from the image. 
                                         
-                                        If the image does not contain a plant or flower, reply with:
-                                        "Error: This image does not contain a plant or flower."
+                                        IMPORTANT RULES:
+                                        1. If the image contains ANY of these, reply with EXACTLY: "Error: This image does not contain a plant or flower."
+                                           - Animals, insects, birds
+                                           - People, faces, human body parts
+                                           - Buildings, cars, objects
+                                           - Food, fruits (unless shown growing on plant)
+                                           - Text, screens, documents
+                                           - Landscapes without clear plants
+                                           - Furniture, household items
+                                           - Clothes, accessories
+                                           - Sky, clouds without plants
+                                           - Water bodies without plants
+                                           - Rocks, minerals alone
                                         
-                                        Then provide an interesting fact about the identified plant in exactly two sentences.
+                                        2. If it's a plant or flower:
+                                           - First line: "Name: [common or scientific name]"
+                                           - Second line: "Fact: [two interesting sentences about it]"
                                         
-                                        Follow this response format strictly (keep the important label in bold):
-                                        
-                                        [common or scientific name]  
-                                        [two interesting sentences]
-                                        
-                                        Respond in English.
+                                        Respond in English. Be strict - only identify actual plants or flowers.
 
                                     """.trimIndent())
                                 })
@@ -207,6 +214,20 @@ class GeminiAIService {
 
             Log.d("GeminiAI", "🔍 Received text:\n$text")
 
+            // VÉRIFICATION SI C'EST UNE PLANTE
+            val isNotPlant = text.contains("Error: This image does not contain a plant or flower", ignoreCase = true) ||
+                    text.contains("not a plant", ignoreCase = true) ||
+                    text.contains("pas une plante", ignoreCase = true) ||
+                    text.contains("no plant", ignoreCase = true) ||
+                    text.contains("does not contain", ignoreCase = true)
+
+            if (isNotPlant) {
+                // Retourner un message spécial pour indiquer que ce n'est pas une plante
+                Log.d("GeminiAI", "Image is not a plant")
+                return Pair("NOT_A_PLANT", "Cette image ne semble pas contenir de plante ou de fleur")
+            }
+
+            // Continuer avec l'extraction normale du nom et du fait
             var name = ""
             var fact = ""
 

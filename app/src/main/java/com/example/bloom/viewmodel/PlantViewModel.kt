@@ -66,6 +66,19 @@ class PlantViewModel(
                 Log.d("PlantViewModel", "File created: ${imageFile.absolutePath}")
 
                 val (name, summary) = geminiAIService.identifyPlantFromImage(bitmap)
+                Log.d("PlantViewModel", "Identification result: $name")
+
+                // VÉRIFICATION: Si ce n'est pas une plante, arrêter ici
+                if (name == "NOT_A_PLANT") {
+                    Log.d("PlantViewModel", "Image is not a plant, stopping process")
+                    _error.postValue("This image does not appear to contain a plant.\nPlease take a photo of a real plant or flower..")
+
+                    // Supprimer le fichier temporaire
+                    imageFile.delete()
+
+                    return@launch
+                }
+
                 Log.d("PlantViewModel", "Successful identification: $name")
 
                 val imageUrl = supabaseStorageService.uploadImage(
@@ -101,6 +114,7 @@ class PlantViewModel(
             }
         }
     }
+
     private fun bitmapToFile(bitmap: Bitmap, userId: String): File {
         val file = File.createTempFile("plant_${userId}_", ".jpg")
         try {
