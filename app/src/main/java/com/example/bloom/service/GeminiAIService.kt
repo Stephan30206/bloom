@@ -13,7 +13,7 @@ import java.net.URL
 
 class GeminiAIService {
 
-    private val apiKey = "AIzaSyAo5N51gbzfm5rRTpZgo_XlpzfXLDVDLbc"
+    private val apiKey = "AIzaSyCEhnWck8XJhdV9ZKTqOuaWJbg2Zxqg35o"
     private val apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$apiKey"
 
     suspend fun identifyPlantFromImage(bitmap: Bitmap): Pair<String, String> {
@@ -31,15 +31,21 @@ class GeminiAIService {
                             put("parts", JSONArray().apply {
                                 put(JSONObject().apply {
                                     put("text", """
-                                        Identify this plant, flower, or insect in the image.
-                                        Write one interesting fact in two sentences.
+                                        Your task is to identify the plant or flower shown in the image. 
+                                        You must ONLY identify plants or flowers.
                                         
-                                        Respond EXACTLY in the following format (and put the important point in bold):
+                                        If the image does not contain a plant or flower, reply with:
+                                        "Error: This image does not contain a plant or flower."
                                         
-                                        Name: [common or scientific name]
-                                        Fact: [three interesting sentences]
+                                        Then provide an interesting fact about the identified plant in exactly two sentences.
+                                        
+                                        Follow this response format strictly (keep the important label in bold):
+                                        
+                                        [common or scientific name]  
+                                        [two interesting sentences]
                                         
                                         Respond in English.
+
                                     """.trimIndent())
                                 })
                                 put(JSONObject().apply {

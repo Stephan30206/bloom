@@ -71,6 +71,6 @@ class MainActivity : ComponentActivity() {
     private fun initSupabase() {
         // Ceci initialise le client Supabase
         val client = SupabaseClient.client
-        Log.d("MainActivity", "Supabase initialisé")
+        Log.d("MainActivity", "Supabase initialized")
     }
 }

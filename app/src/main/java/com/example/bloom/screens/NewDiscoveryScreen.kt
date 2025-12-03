@@ -33,6 +33,7 @@ import com.example.bloom.viewmodel.PlantViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
+import kotlinx.coroutines.delay
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
@@ -130,12 +131,23 @@ fun NewDiscoveryScreen(
         }
     }
 
+    LaunchedEffect(Unit) {
+        plantViewModel.clearCurrentPlant()
+    }
+
     // Navigation automatique après identification réussie
     LaunchedEffect(currentPlant) {
         if (currentPlant != null && !isLoading) {
             Log.d("Discovery", "Identification réussie, navigation vers la liste")
+
+            // Attendre un peu pour montrer le résultat
+            delay(1000)
+
             // Retour à l'écran précédent
             navController.popBackStack()
+
+            // IMPORTANT: Réinitialiser pour la prochaine identification
+            plantViewModel.clearCurrentPlant()
         }
     }
 

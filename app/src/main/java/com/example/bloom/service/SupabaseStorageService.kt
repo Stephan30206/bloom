@@ -64,8 +64,8 @@ class SupabaseStorageService {
             val response = client.newCall(request).execute()
             val responseBody = response.body?.string()
 
-            Log.d("SupabaseStorage", "Code réponse: ${response.code}")
-            Log.d("SupabaseStorage", "Réponse: $responseBody")
+            Log.d("SupabaseStorage", "Response code: ${response.code}")
+            Log.d("SupabaseStorage", "Response: $responseBody")
 
             if (!response.isSuccessful) {
                 throw Exception("Upload failed: ${response.code} - $responseBody")
@@ -73,7 +73,7 @@ class SupabaseStorageService {
 
             // ✅ URL PUBLIQUE CORRECTE
             val publicUrl = "$supabaseUrl/storage/v1/object/public/$bucketName/$filePath"
-            Log.d("SupabaseStorage", "Upload réussi: $publicUrl")
+            Log.d("SupabaseStorage", "Upload successful: $publicUrl")
             return@withContext publicUrl
 
         } catch (e: Exception) {

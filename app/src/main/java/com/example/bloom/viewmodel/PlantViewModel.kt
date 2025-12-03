@@ -45,7 +45,7 @@ class PlantViewModel(
                     _isLoading.postValue(false)
                 }
             } catch (e: Exception) {
-                _error.postValue("Erreur de chargement des plantes: ${e.message}")
+                _error.postValue("Plant loading error: ${e.message}")
                 _isLoading.postValue(false)
             }
         }
@@ -57,28 +57,24 @@ class PlantViewModel(
             _error.postValue(null)
 
             try {
-                Log.d("PlantViewModel", "Début identification plante...")
+                Log.d("PlantViewModel", "Start of plant identification...")
 
                 val userId = auth.currentUser?.uid
-                    ?: throw Exception("Vous devez être connecté")
+                    ?: throw Exception("You must be logged in")
 
-                // 1. Convertir Bitmap en File
                 val imageFile = bitmapToFile(bitmap, userId)
-                Log.d("PlantViewModel", "Fichier créé: ${imageFile.absolutePath}")
+                Log.d("PlantViewModel", "File created: ${imageFile.absolutePath}")
 
-                // 2. Identifier avec Gemini AI
                 val (name, summary) = geminiAIService.identifyPlantFromImage(bitmap)
-                Log.d("PlantViewModel", "Identification réussie: $name")
+                Log.d("PlantViewModel", "Successful identification: $name")
 
-                // 3. Upload vers Supabase (CORRIGÉ: passer le File et plantName)
                 val imageUrl = supabaseStorageService.uploadImage(
                     imageFile = imageFile,
                     userId = userId,
                     plantName = name
                 )
-                Log.d("PlantViewModel", "Image uploadée: $imageUrl")
+                Log.d("PlantViewModel", "Image uploaded: $imageUrl")
 
-                // 4. Créer et sauvegarder la plante
                 val plant = Plant(
                     id = Plant.generateId(),
                     name = name,
@@ -91,24 +87,20 @@ class PlantViewModel(
                 plantRepository.insertPlant(plant)
                 _currentPlant.postValue(plant)
 
-                // 5. Recharger la liste
                 loadPlants(userId)
 
-                Log.d("PlantViewModel", "Plante sauvegardée: ${plant.id}")
+                Log.d("PlantViewModel", "Saved plant: ${plant.id}")
 
-                // 6. Nettoyer le fichier temporaire
                 imageFile.delete()
 
             } catch (e: Exception) {
-                Log.e("PlantViewModel", "Échec: ${e.message}", e)
-                _error.postValue("Erreur: ${e.localizedMessage}")
+                Log.e("PlantViewModel", "Failure: ${e.message}", e)
+                _error.postValue("Error: ${e.localizedMessage}")
             } finally {
                 _isLoading.postValue(false)
             }
         }
     }
-
-    // Fonction pour convertir Bitmap en File
     private fun bitmapToFile(bitmap: Bitmap, userId: String): File {
         val file = File.createTempFile("plant_${userId}_", ".jpg")
         try {
@@ -117,7 +109,7 @@ class PlantViewModel(
             stream.flush()
             stream.close()
         } catch (e: Exception) {
-            Log.e("PlantViewModel", "Erreur conversion bitmap: ${e.message}")
+            Log.e("PlantViewModel", "Bitmap conversion error: ${e.message}")
         }
         return file
     }
@@ -129,7 +121,7 @@ class PlantViewModel(
                 _currentPlant.postValue(plantRepository.getPlantById(plantId))
                 _isLoading.postValue(false)
             } catch (e: Exception) {
-                _error.postValue("Erreur de chargement: ${e.message}")
+                _error.postValue("Loading error: ${e.message}")
                 _isLoading.postValue(false)
             }
         }
@@ -140,28 +132,16 @@ class PlantViewModel(
             try {
                 _isLoading.postValue(true)
 
-                // 1. Supprimer de la base de données
                 plantRepository.deletePlant(plant)
 
-                // 2. Optionnel: Ajouter une fonction deleteImage dans SupabaseStorageService
-                // si tu veux supprimer l'image de Supabase aussi
-                // supabaseStorageService.deleteImage(plant.imageUrl)
-
-                // 3. Recharger la liste
                 loadPlants(plant.userId)
 
             } catch (e: Exception) {
-                _error.postValue("Erreur de suppression: ${e.message}")
+                _error.postValue("Deletion error: ${e.message}")
             } finally {
                 _isLoading.postValue(false)
             }
         }
-    }
-
-    // Ajoute cette fonction si tu veux supprimer les images
-    suspend fun deleteImageFromSupabase(imageUrl: String) {
-        // Tu peux implémenter cette fonction dans SupabaseStorageService
-        // puis l'appeler ici
     }
 
     fun clearError() {
