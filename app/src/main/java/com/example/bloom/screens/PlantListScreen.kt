@@ -54,27 +54,8 @@ fun PlantListScreen(
                         text = "My Plant Journal",
                         fontWeight = FontWeight.Bold
                     )
-                },
-                actions = {
-                    IconButton(
-                        onClick = {
-                            authViewModel.logout()
-                        }
-                    ) {
-                        Icon(Icons.Filled.ExitToApp, contentDescription = "Logout")
-                    }
                 }
             )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = {
-                    navController.navigate(Screen.Discovery.route)
-                },
-                containerColor = Color(0xFF2E7D32)
-            ) {
-                Icon(Icons.Filled.Add, contentDescription = "Add Plant")
-            }
         }
     ) { paddingValues ->
         if (isLoading) {

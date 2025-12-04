@@ -2,10 +2,8 @@ package com.example.bloom.screens
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
-import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -27,9 +25,9 @@ fun MainScreen(
     LaunchedEffect(authState) {
         when (authState) {
             is AuthState.Authenticated -> {
-                // Si authentifié, naviguer vers PlantListScreen
-                if (navController.currentDestination?.route != Screen.PlantList.route) {
-                    navController.navigate(Screen.PlantList.route) {
+                // Si authentifié, naviguer vers MainScreenWithBottomNav
+                if (navController.currentDestination?.route != "main_with_bottom_nav") {
+                    navController.navigate("main_with_bottom_nav") {
                         popUpTo(Screen.Login.route) { inclusive = true }
                     }
                 }
@@ -48,21 +46,6 @@ fun MainScreen(
         }
     }
 
-    NavigationGraph(
-        navController = navController,
-        authViewModel = authViewModel,
-        plantViewModel = plantViewModel,
-        onGoogleSignInClick = onGoogleSignInClick
-    )
-}
-
-@Composable
-fun NavigationGraph(
-    navController: NavHostController,
-    authViewModel: AuthViewModel,
-    plantViewModel: PlantViewModel,
-    onGoogleSignInClick: () -> Unit = {}
-) {
     NavHost(
         navController = navController,
         startDestination = Screen.Login.route
@@ -83,74 +66,22 @@ fun NavigationGraph(
             )
         }
 
-        composable(Screen.PlantList.route) {
-            val authState by authViewModel.authState.observeAsState()
-            when (authState) {
+        // 🔧 NOUVEAU : Écran principal avec bottom navigation
+        composable("main_with_bottom_nav") {
+            val currentAuthState by authViewModel.authState.observeAsState()
+            when (currentAuthState) {
                 is AuthState.Authenticated -> {
-                    PlantListScreen(
-                        navController = navController,
+                    MainScreenWithBottomNav(
                         authViewModel = authViewModel,
                         plantViewModel = plantViewModel,
-                        userId = (authState as AuthState.Authenticated).userId
+                        userId = (currentAuthState as AuthState.Authenticated).userId
                     )
                 }
                 else -> {
                     // Rediriger vers le login si non authentifié
                     LaunchedEffect(Unit) {
                         navController.navigate(Screen.Login.route) {
-                            popUpTo(Screen.PlantList.route) { inclusive = true }
-                        }
-                    }
-                }
-            }
-        }
-
-        composable(Screen.Discovery.route) {
-            val authState by authViewModel.authState.observeAsState()
-            when (authState) {
-                is AuthState.Authenticated -> {
-                    NewDiscoveryScreen(
-                        navController = navController,
-                        plantViewModel = plantViewModel
-                    )
-                }
-                else -> {
-                    // Rediriger vers le login si non authentifié
-                    LaunchedEffect(Unit) {
-                        navController.navigate(Screen.Login.route) {
-                            popUpTo(Screen.Discovery.route) { inclusive = true }
-                        }
-                    }
-                }
-            }
-        }
-
-        composable(Screen.Settings.route) {
-            SettingPage(
-                onBackPressed = { navController.popBackStack() },
-                onUpgradeToPro = { /* TODO: Handle upgrade */ },
-                onChangeLanguage = { /* TODO: Handle language change */ },
-                onShare = { /* TODO: Handle share */ },
-                onContact = { /* TODO: Handle contact */ }
-            )
-        }
-
-        composable(Screen.PlantDetail.route) { backStackEntry ->
-            val plantId = backStackEntry.arguments?.getString("plantId") ?: ""
-            val authState by authViewModel.authState.observeAsState()
-            when (authState) {
-                is AuthState.Authenticated -> {
-                    PlantDetailScreen(
-                        navController = navController,
-                        plantViewModel = plantViewModel,
-                        plantId = plantId
-                    )
-                }
-                else -> {
-                    // Rediriger vers le login si non authentifié
-                    LaunchedEffect(Unit) {
-                        navController.navigate(Screen.Login.route) {
-                            popUpTo(Screen.PlantDetail.route) { inclusive = true }
+                            popUpTo("main_with_bottom_nav") { inclusive = true }
                         }
                     }
                 }
@@ -159,7 +90,7 @@ fun NavigationGraph(
     }
 }
 
-// Routes
+// Routes constantes (conservées pour compatibilité)
 const val LoginScreenRoute = "login"
 const val SignUpScreenRoute = "signup"
 const val PlantListScreenRoute = "plant_list"

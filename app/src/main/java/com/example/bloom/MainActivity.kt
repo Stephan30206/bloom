@@ -98,7 +98,7 @@ class MainActivity : ComponentActivity() {
      */
     private suspend fun initializeAppAsync() {
         try {
-            Log.d("MainActivity", "Start async init")
+            Log.d("MainActivity", "🚀 Start async init")
 
             // Google Sign-In (lightweight, must be on main)
             withContext(Dispatchers.Main) {
@@ -134,10 +134,14 @@ class MainActivity : ComponentActivity() {
                         PlantViewModelFactory(plantRepository, geminiAIService)
                     )[PlantViewModel::class.java]
 
-                    // Setup Firebase listener
+                    // 🔧 CORRECTION: Setup Firebase listener avec synchronisation
                     firebaseAuth.addAuthStateListener { auth ->
                         auth.currentUser?.let { user ->
+                            Log.d("MainActivity", "🔐 User logged in: ${user.uid}")
+
+                            // ✅ Synchroniser automatiquement au login
                             lifecycleScope.launch(Dispatchers.IO) {
+                                Log.d("MainActivity", "🔄 Auto-syncing on login...")
                                 plantViewModel?.syncPlants(user.uid)
                             }
                         }
@@ -145,10 +149,10 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            Log.d("MainActivity", "Init complete")
+            Log.d("MainActivity", "✅ Init complete")
 
         } catch (e: Exception) {
-            Log.e("MainActivity", "Init failed", e)
+            Log.e("MainActivity", "❌ Init failed", e)
             withContext(Dispatchers.Main) {
                 // Show error to user if needed
             }

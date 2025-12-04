@@ -7,12 +7,14 @@ import android.net.Uri
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
@@ -47,12 +49,12 @@ fun NewDiscoveryScreen(
     val context = LocalContext.current
     var capturedImageUri by remember { mutableStateOf<Uri?>(null) }
 
-    // États du ViewModel
+    // ViewModel states
     val isLoading by plantViewModel.isLoading.observeAsState(false)
     val error by plantViewModel.error.observeAsState()
     val currentPlant by plantViewModel.currentPlant.observeAsState()
 
-    // Permission caméra
+    // Camera permission
     val cameraPermissionState = rememberPermissionState(
         permission = Manifest.permission.CAMERA
     )
@@ -62,7 +64,7 @@ fun NewDiscoveryScreen(
     ) { uri ->
         uri?.let {
             capturedImageUri = it
-            // Convertir URI en Bitmap et identifier
+            // Convert URI to Bitmap and identify
             try {
                 context.contentResolver.openInputStream(it)?.use { inputStream ->
                     val bitmap = BitmapFactory.decodeStream(inputStream)
@@ -70,13 +72,13 @@ fun NewDiscoveryScreen(
                         plantViewModel.identifyAndSavePlant(bmp)
                     } ?: run {
                         plantViewModel.clearError()
-                        plantViewModel._error.postValue("Impossible de charger l'image sélectionnée")
+                        plantViewModel._error.postValue("Unable to load selected image")
                     }
                 }
             } catch (e: Exception) {
-                Log.e("Discovery", "Erreur chargement image: ${e.message}")
+                Log.e("Discovery", "Image loading error: ${e.message}")
                 plantViewModel.clearError()
-                plantViewModel._error.postValue("Erreur lors du chargement de l'image")
+                plantViewModel._error.postValue("Error loading image")
             }
         }
     }
@@ -86,7 +88,7 @@ fun NewDiscoveryScreen(
     ) { success ->
         if (success) {
             capturedImageUri?.let { uri ->
-                // Convertir URI en Bitmap et identifier
+                // Convert URI to Bitmap and identify
                 try {
                     context.contentResolver.openInputStream(uri)?.use { inputStream ->
                         val bitmap = BitmapFactory.decodeStream(inputStream)
@@ -94,18 +96,18 @@ fun NewDiscoveryScreen(
                             plantViewModel.identifyAndSavePlant(bmp)
                         } ?: run {
                             plantViewModel.clearError()
-                            plantViewModel._error.postValue("Impossible de charger la photo")
+                            plantViewModel._error.postValue("Unable to load photo")
                         }
                     }
                 } catch (e: Exception) {
-                    Log.e("Discovery", "Erreur chargement photo: ${e.message}")
+                    Log.e("Discovery", "Photo loading error: ${e.message}")
                     plantViewModel.clearError()
-                    plantViewModel._error.postValue("Erreur lors du chargement de la photo")
+                    plantViewModel._error.postValue("Error loading photo")
                 }
             }
         } else {
             plantViewModel.clearError()
-            plantViewModel._error.postValue("Échec de la prise de photo")
+            plantViewModel._error.postValue("Photo capture failed")
         }
     }
 
@@ -122,11 +124,11 @@ fun NewDiscoveryScreen(
                 cameraLauncher.launch(photoUri)
             } catch (e: Exception) {
                 e.printStackTrace()
-                // Fallback vers la galerie
+                // Fallback to gallery
                 galleryLauncher.launch("image/*")
             }
         } else {
-            // Demander la permission
+            // Request permission
             cameraPermissionState.launchPermissionRequest()
         }
     }
@@ -135,26 +137,26 @@ fun NewDiscoveryScreen(
         plantViewModel.clearCurrentPlant()
     }
 
-    // Navigation automatique après identification réussie
+    // Automatic navigation after successful identification
     LaunchedEffect(currentPlant) {
         if (currentPlant != null && !isLoading) {
-            Log.d("Discovery", "Identification réussie, navigation vers la liste")
+            Log.d("Discovery", "Identification successful, navigating to list")
 
-            // Attendre un peu pour montrer le résultat
+            // Wait a bit to show the result
             delay(1000)
 
-            // Retour à l'écran précédent
+            // Go back to previous screen
             navController.popBackStack()
 
-            // IMPORTANT: Réinitialiser pour la prochaine identification
+            // IMPORTANT: Reset for next identification
             plantViewModel.clearCurrentPlant()
         }
     }
 
-    // Afficher les erreurs
+    // Display errors
     LaunchedEffect(error) {
         error?.let {
-            Log.e("Discovery", "Erreur: $it")
+            Log.e("Discovery", "Error: $it")
         }
     }
 
@@ -163,7 +165,7 @@ fun NewDiscoveryScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Nouvelle Découverte",
+                        text = "New Discovery",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Medium
                     )
@@ -177,7 +179,7 @@ fun NewDiscoveryScreen(
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Retour"
+                            contentDescription = "Back"
                         )
                     }
                 }
@@ -192,7 +194,7 @@ fun NewDiscoveryScreen(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Aperçu de l'image
+            // Image preview
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -207,7 +209,7 @@ fun NewDiscoveryScreen(
                         CircularProgressIndicator(color = Color(0xFF4CAF50))
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = "Identification en cours...",
+                            text = "Identifying plant...",
                             color = Color.Black,
                             fontSize = 14.sp
                         )
@@ -215,7 +217,7 @@ fun NewDiscoveryScreen(
                 } else if (capturedImageUri != null) {
                     AsyncImage(
                         model = capturedImageUri,
-                        contentDescription = "Plante capturée",
+                        contentDescription = "Captured plant",
                         modifier = Modifier
                             .fillMaxSize()
                             .clip(RoundedCornerShape(10.dp)),
@@ -223,10 +225,17 @@ fun NewDiscoveryScreen(
                     )
                 } else {
                     Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
+                        Icon(
+                            imageVector = Icons.Default.CameraAlt,
+                            contentDescription = null,
+                            tint = Color.LightGray,
+                            modifier = Modifier.size(64.dp)
+                        )
                         Text(
-                            text = "Prenez une photo pour identifier la plante",
+                            text = "Take a photo to identify the plant",
                             fontSize = 14.sp,
                             color = Color.Gray,
                             textAlign = TextAlign.Center
@@ -237,7 +246,7 @@ fun NewDiscoveryScreen(
 
             Spacer(modifier = Modifier.height(60.dp))
 
-            // Bouton Prendre une photo
+            // Take Photo button
             Button(
                 onClick = takePhoto,
                 enabled = !isLoading,
@@ -254,7 +263,7 @@ fun NewDiscoveryScreen(
                     modifier = Modifier.padding(end = 8.dp)
                 )
                 Text(
-                    text = "Prendre une Photo",
+                    text = "Take a Photo",
                     fontSize = 16.sp,
                     color = Color.White
                 )
@@ -262,7 +271,7 @@ fun NewDiscoveryScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Bouton Galerie
+            // Gallery button
             OutlinedButton(
                 onClick = {
                     if (!isLoading) galleryLauncher.launch("image/*")
@@ -280,51 +289,106 @@ fun NewDiscoveryScreen(
                     modifier = Modifier.padding(end = 8.dp)
                 )
                 Text(
-                    text = "Choisir depuis la Galerie",
+                    text = "Choose from Gallery",
                     fontSize = 16.sp,
                     color = Color.Black
                 )
             }
 
-            // Afficher les erreurs
+            // Display errors - Improved design
             error?.let { errorMessage ->
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = when {
-                        errorMessage.contains("pas une plante", ignoreCase = true) ->
-                            "❌ Cette image ne semble pas contenir une plante.\nVeuillez prendre une photo d'une vraie plante ou fleur."
-                        errorMessage.contains("Object does not exist") ->
-                            "Erreur de connexion. Vérifiez votre internet."
-                        errorMessage.contains("storage") || errorMessage.contains("upload") ->
-                            "Problème de sauvegarde. Réessayez."
-                        errorMessage.contains("authentifié") ->
-                            "Vous devez être connecté pour identifier des plantes"
-                        else -> errorMessage
-                    },
-                    color = if (errorMessage.contains("pas une plante")) Color(0xFFD32F2F) else Color.Red,
-                    fontSize = 14.sp,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = 16.dp)
-                )
+                Spacer(modifier = Modifier.height(24.dp))
 
-                // Afficher un bouton pour réessayer seulement quand ce n'est pas une plante
-                if (errorMessage.contains("pas une plante", ignoreCase = true)) {
+                val (displayMessage, isPlantError) = when {
+                    errorMessage.contains("pas une plante", ignoreCase = true) ||
+                            errorMessage.contains("not a plant", ignoreCase = true) ||
+                            errorMessage.contains("does not contain", ignoreCase = true) ->
+                        Pair("This image doesn't appear to contain a plant.\nPlease take a photo of a real plant or flower.", true)
+
+                    errorMessage.contains("Object does not exist", ignoreCase = true) ->
+                        Pair("Connection error. Please check your internet.", false)
+
+                    errorMessage.contains("storage", ignoreCase = true) ||
+                            errorMessage.contains("upload", ignoreCase = true) ->
+                        Pair("Storage problem. Please try again.", false)
+
+                    errorMessage.contains("authentifié", ignoreCase = true) ||
+                            errorMessage.contains("authenticated", ignoreCase = true) ->
+                        Pair("You must be logged in to identify plants.", false)
+
+                    errorMessage.contains("Impossible", ignoreCase = true) ->
+                        Pair("Unable to load the image. Please try again.", false)
+
+                    errorMessage.contains("Erreur", ignoreCase = true) ->
+                        Pair("An error occurred. Please try again.", false)
+
+                    else -> Pair(errorMessage, false)
+                }
+
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (isPlantError) Color(0xFFFFEBEE) else Color(0xFFFFF3E0)
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Warning,
+                            contentDescription = null,
+                            tint = if (isPlantError) Color(0xFFD32F2F) else Color(0xFFF57C00),
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = if (isPlantError) "Not a Plant" else "Error",
+                                fontWeight = FontWeight.Bold,
+                                color = if (isPlantError) Color(0xFFD32F2F) else Color(0xFFF57C00),
+                                fontSize = 15.sp
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = displayMessage,
+                                color = Color.DarkGray,
+                                fontSize = 14.sp,
+                                lineHeight = 20.sp
+                            )
+                        }
+                    }
+                }
+
+                // Show retry button only when it's not a plant
+                if (isPlantError) {
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(
                         onClick = {
                             plantViewModel.clearError()
                             capturedImageUri = null
                         },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2196F3)),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF2196F3)
+                        ),
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(45.dp),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text("Prendre une autre photo")
+                        Text(
+                            text = "Take Another Photo",
+                            color = Color.White,
+                            fontSize = 15.sp
+                        )
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }

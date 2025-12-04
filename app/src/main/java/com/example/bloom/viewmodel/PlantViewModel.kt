@@ -36,36 +36,53 @@ class PlantViewModel(
     private val supabaseStorageService = SupabaseStorageService()
     private val auth = FirebaseAuth.getInstance()
 
-    // Dans PlantViewModel.kt, ajoutez cette fonction
-    fun syncPlants(userId: String) {
+    // 🔧 CORRECTION 1: Toujours synchroniser avant de charger
+    fun loadPlants(userId: String, forceSync: Boolean = false) {
         viewModelScope.launch {
-            _isLoading.postValue(true)
             try {
-                // Synchroniser avec Supabase
-                // Cela va: 1) Télécharger les plantes d'autres appareils
-                //          2) Envoyer les plantes locales non synchronisées
-                plantRepository.syncWithSupabase(userId)
+                _isLoading.postValue(true)
 
-                // Recharger les plantes (depuis Room, qui contient maintenant les plantes fusionnées)
-                loadPlants(userId)
+                // ✅ Synchroniser avec Supabase D'ABORD
+                if (forceSync) {
+                    Log.d("PlantViewModel", "🔄 Force sync with Supabase...")
+                    plantRepository.syncWithSupabase(userId)
+                }
+
+                // ✅ Ensuite charger depuis Room (qui contient maintenant toutes les données)
+                plantRepository.getPlantsByUser(userId).collect { plantsList ->
+                    Log.d("PlantViewModel", "📦 Loaded ${plantsList.size} plants from Room")
+                    _plants.postValue(plantsList)
+                    _isLoading.postValue(false)
+                }
             } catch (e: Exception) {
-                _error.postValue("Sync error: ${e.message}")
-            } finally {
+                Log.e("PlantViewModel", "❌ Plant loading error", e)
+                _error.postValue("Plant loading error: ${e.message}")
                 _isLoading.postValue(false)
             }
         }
     }
 
-    fun loadPlants(userId: String) {
+    // 🔧 CORRECTION 2: Fonction de sync explicite avec feedback
+    fun syncPlants(userId: String) {
         viewModelScope.launch {
             try {
+                Log.d("PlantViewModel", "🔄 Starting manual sync...")
                 _isLoading.postValue(true)
-                plantRepository.getPlantsByUser(userId).collect { plantsList ->
-                    _plants.postValue(plantsList)
-                    _isLoading.postValue(false)
+
+                val success = plantRepository.syncWithSupabase(userId)
+
+                if (success) {
+                    Log.d("PlantViewModel", "✅ Sync successful")
+                    // Recharger les plantes après sync
+                    loadPlants(userId, forceSync = false)
+                } else {
+                    Log.e("PlantViewModel", "❌ Sync failed")
+                    _error.postValue("Sync failed. Check your internet connection.")
                 }
             } catch (e: Exception) {
-                _error.postValue("Plant loading error: ${e.message}")
+                Log.e("PlantViewModel", "❌ Sync error", e)
+                _error.postValue("Sync error: ${e.message}")
+            } finally {
                 _isLoading.postValue(false)
             }
         }
@@ -77,36 +94,32 @@ class PlantViewModel(
             _error.postValue(null)
 
             try {
-                Log.d("PlantViewModel", "Start of plant identification...")
+                Log.d("PlantViewModel", "🔍 Start of plant identification...")
 
                 val userId = auth.currentUser?.uid
                     ?: throw Exception("You must be logged in")
 
                 val imageFile = bitmapToFile(bitmap, userId)
-                Log.d("PlantViewModel", "File created: ${imageFile.absolutePath}")
+                Log.d("PlantViewModel", "📁 File created: ${imageFile.absolutePath}")
 
                 val (name, summary) = geminiAIService.identifyPlantFromImage(bitmap)
-                Log.d("PlantViewModel", "Identification result: $name")
+                Log.d("PlantViewModel", "🌿 Identification result: $name")
 
-                // VÉRIFICATION: Si ce n'est pas une plante, arrêter ici
                 if (name == "NOT_A_PLANT") {
-                    Log.d("PlantViewModel", "Image is not a plant, stopping process")
-                    _error.postValue("This image does not appear to contain a plant.\nPlease take a photo of a real plant or flower..")
-
-                    // Supprimer le fichier temporaire
+                    Log.d("PlantViewModel", "⚠️ Image is not a plant, stopping process")
+                    _error.postValue("This image does not appear to contain a plant.\nPlease take a photo of a real plant or flower.")
                     imageFile.delete()
-
                     return@launch
                 }
 
-                Log.d("PlantViewModel", "Successful identification: $name")
+                Log.d("PlantViewModel", "✅ Successful identification: $name")
 
                 val imageUrl = supabaseStorageService.uploadImage(
                     imageFile = imageFile,
                     userId = userId,
                     plantName = name
                 )
-                Log.d("PlantViewModel", "Image uploaded: $imageUrl")
+                Log.d("PlantViewModel", "☁️ Image uploaded: $imageUrl")
 
                 val plant = Plant(
                     id = Plant.generateId(),
@@ -117,17 +130,19 @@ class PlantViewModel(
                     userId = userId
                 )
 
+                // ✅ Sauvegarder et synchroniser
                 plantRepository.insertPlant(plant)
                 _currentPlant.postValue(plant)
 
-                loadPlants(userId)
+                // ✅ Recharger les plantes
+                loadPlants(userId, forceSync = false)
 
-                Log.d("PlantViewModel", "Saved plant: ${plant.id}")
+                Log.d("PlantViewModel", "💾 Saved plant: ${plant.id}")
 
                 imageFile.delete()
 
             } catch (e: Exception) {
-                Log.e("PlantViewModel", "Failure: ${e.message}", e)
+                Log.e("PlantViewModel", "❌ Failure: ${e.message}", e)
                 _error.postValue("Error: ${e.localizedMessage}")
             } finally {
                 _isLoading.postValue(false)
@@ -165,11 +180,8 @@ class PlantViewModel(
         viewModelScope.launch {
             try {
                 _isLoading.postValue(true)
-
                 plantRepository.deletePlant(plant)
-
-                loadPlants(plant.userId)
-
+                loadPlants(plant.userId, forceSync = false)
             } catch (e: Exception) {
                 _error.postValue("Deletion error: ${e.message}")
             } finally {

@@ -4,6 +4,8 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
@@ -11,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -25,9 +28,6 @@ import com.example.bloom.viewmodel.AuthViewModel
 import kotlinx.serialization.Serializable
 import androidx.compose.runtime.livedata.observeAsState
 
-//@Serializable
-//object SignUpScreenRoute
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SignUpScreen(
@@ -41,27 +41,65 @@ fun SignUpScreen(
     var passwordError by remember { mutableStateOf("") }
     val authState by authViewModel.authState.observeAsState()
 
+    // 📱 Obtenir les dimensions de l'écran
+    val configuration = LocalConfiguration.current
+    val screenHeight = configuration.screenHeightDp.dp
+    val screenWidth = configuration.screenWidthDp.dp
+
+    // 📐 Adapter les tailles selon l'écran
+    val logoSize = when {
+        screenHeight < 600.dp -> 100.dp  // Petit écran
+        screenHeight < 800.dp -> 140.dp  // Écran moyen
+        else -> 170.dp                    // Grand écran
+    }
+
+    val horizontalPadding = when {
+        screenWidth < 360.dp -> 16.dp
+        screenWidth < 400.dp -> 20.dp
+        else -> 24.dp
+    }
+
+    val spacingSmall = when {
+        screenHeight < 600.dp -> 12.dp
+        screenHeight < 800.dp -> 20.dp
+        else -> 35.dp
+    }
+
+    val spacingMedium = when {
+        screenHeight < 600.dp -> 16.dp
+        screenHeight < 800.dp -> 24.dp
+        else -> 30.dp
+    }
+
+    val spacingBetweenFields = when {
+        screenHeight < 600.dp -> 10.dp
+        screenHeight < 800.dp -> 12.dp
+        else -> 16.dp
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFFFFFFF))
-            .padding(24.dp),
-        contentAlignment = Alignment.Center
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())  // 🔧 Permet de scroller sur petits écrans
+                .padding(horizontal = horizontalPadding)
+                .padding(vertical = 24.dp),
+            verticalArrangement = Arrangement.Center
         ) {
 
-            // Logo
+            // Logo - taille adaptative
             Image(
-                painter = painterResource(id = R.drawable.logo_transparent),
+                painter = painterResource(id = R.drawable.logobloom),
                 contentDescription = "Logo",
-                modifier = Modifier
-                    .size(170.dp)
+                modifier = Modifier.size(logoSize)
             )
 
-            Spacer(modifier = Modifier.height(35.dp))
+            Spacer(modifier = Modifier.height(spacingSmall))
 
             // Header
             Text(
@@ -71,7 +109,7 @@ fun SignUpScreen(
                 color = Color.Black
             )
 
-            Spacer(modifier = Modifier.height(30.dp))
+            Spacer(modifier = Modifier.height(spacingMedium))
 
             // 📧 Champ e-mail
             OutlinedTextField(
@@ -91,7 +129,7 @@ fun SignUpScreen(
                 )
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(spacingBetweenFields))
 
             // 🔒 Champ mot de passe
             OutlinedTextField(
@@ -119,7 +157,7 @@ fun SignUpScreen(
                 )
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(spacingBetweenFields))
 
             // 🔒 Champ confirmation mot de passe
             OutlinedTextField(
@@ -167,7 +205,7 @@ fun SignUpScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(30.dp))
+            Spacer(modifier = Modifier.height(spacingMedium))
 
             // 🟩 Bouton d'inscription
             Button(
@@ -219,7 +257,7 @@ fun SignUpScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(30.dp))
+            Spacer(modifier = Modifier.height(spacingMedium))
 
             // Ligne séparatrice avec "OR"
             Row(
@@ -244,7 +282,7 @@ fun SignUpScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(30.dp))
+            Spacer(modifier = Modifier.height(spacingMedium))
 
             // 🔘 Connexion Google (FONCTIONNEL)
             OutlinedButton(
@@ -273,23 +311,16 @@ fun SignUpScreen(
                     fontWeight = FontWeight.Medium
                 )
             }
+
+            // 🔧 Espace supplémentaire en bas pour les petits écrans
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
-
-    // Navigation automatique après inscription réussie
-//    LaunchedEffect(authState) {
-//        if (authState == AuthState.Authenticated) {
-//            navController.navigate(PlantListScreenRoute) {
-//                popUpTo(SignUpScreenRoute) { inclusive = true }
-//            }
-//        }
-//    }
 }
 
 @Preview(showBackground = true)
 @Composable
 fun SignUpScreenPreview() {
-    // Preview sans dépendances
     Box(modifier = Modifier.fillMaxSize()) {
         Text("Sign Up Screen Preview")
     }
