@@ -20,4 +20,13 @@ interface PlantDao {
 
     @Query("DELETE FROM plants WHERE userId = :userId")
     suspend fun deleteAllPlantsForUser(userId: String)
+
+    @Query("SELECT * FROM plants WHERE userId = :userId")
+    suspend fun getPlantsSync(userId: String): List<Plant>
+
+    @Query("UPDATE plants SET synced = :synced WHERE id = :plantId")
+    suspend fun updateSyncedStatus(plantId: String, synced: Boolean)
+
+    @Query("SELECT COUNT(*) FROM plants WHERE userId = :userId AND synced = 0")
+    suspend fun getUnsyncedCount(userId: String): Int
 }

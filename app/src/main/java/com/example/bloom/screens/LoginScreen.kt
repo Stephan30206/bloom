@@ -54,13 +54,13 @@ fun LoginScreen(
 
             // Logo
             Image(
-                painter = painterResource(id = R.drawable.logo_transparent),
+                painter = painterResource(id = R.drawable.logobloom),
                 contentDescription = "Logo",
                 modifier = Modifier
                     .size(170.dp)
             )
 
-            Spacer(modifier = Modifier.height(35.dp))
+            Spacer(modifier = Modifier.height(15.dp))
 
             // Header
             Text(
@@ -70,7 +70,7 @@ fun LoginScreen(
                 color = Color.Black
             )
 
-            Spacer(modifier = Modifier.height(30.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             // 📧 Champ e-mail
             OutlinedTextField(
@@ -90,7 +90,7 @@ fun LoginScreen(
                 )
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             // 🔒 Champ mot de passe
             OutlinedTextField(
@@ -121,7 +121,7 @@ fun LoginScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(30.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             // 🟩 Bouton de connexion
             Button(
@@ -151,7 +151,7 @@ fun LoginScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             // Lien vers l'inscription
             TextButton(
@@ -163,7 +163,7 @@ fun LoginScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(30.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             // Ligne séparatrice avec "OR"
             Row(
@@ -188,7 +188,7 @@ fun LoginScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(30.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             // 🔘 Connexion Google (FONCTIONNEL)
             OutlinedButton(

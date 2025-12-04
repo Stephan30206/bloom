@@ -13,7 +13,7 @@ import java.net.URL
 
 class GeminiAIService {
 
-    private val apiKey = "AIzaSyCEhnWck8XJhdV9ZKTqOuaWJbg2Zxqg35o"
+    private val apiKey = "AIzaSyAWWaRkePcPKIPBs0Ms8M0p8c8hzKg384E"
     private val apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$apiKey"
 
     suspend fun identifyPlantFromImage(bitmap: Bitmap): Pair<String, String> {

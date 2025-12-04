@@ -36,6 +36,26 @@ class PlantViewModel(
     private val supabaseStorageService = SupabaseStorageService()
     private val auth = FirebaseAuth.getInstance()
 
+    // Dans PlantViewModel.kt, ajoutez cette fonction
+    fun syncPlants(userId: String) {
+        viewModelScope.launch {
+            _isLoading.postValue(true)
+            try {
+                // Synchroniser avec Supabase
+                // Cela va: 1) Télécharger les plantes d'autres appareils
+                //          2) Envoyer les plantes locales non synchronisées
+                plantRepository.syncWithSupabase(userId)
+
+                // Recharger les plantes (depuis Room, qui contient maintenant les plantes fusionnées)
+                loadPlants(userId)
+            } catch (e: Exception) {
+                _error.postValue("Sync error: ${e.message}")
+            } finally {
+                _isLoading.postValue(false)
+            }
+        }
+    }
+
     fun loadPlants(userId: String) {
         viewModelScope.launch {
             try {

@@ -11,7 +11,8 @@ data class Plant(
     val summary: String = "",
     val imageUrl: String = "",
     val timestamp: Long = System.currentTimeMillis(),
-    val userId: String = ""
+    val userId: String = "",
+    val synced: Boolean = false
 ) {
     companion object {
         fun generateId(): String = "plant_${System.currentTimeMillis()}_${(1000..9999).random()}"
