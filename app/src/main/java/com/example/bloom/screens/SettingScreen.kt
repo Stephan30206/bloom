@@ -19,13 +19,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import com.example.bloom.viewmodel.AuthViewModel
 import com.example.bloom.viewmodel.SettingsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     navController: NavHostController,
-    settingsViewModel: SettingsViewModel = viewModel()
+    settingsViewModel: SettingsViewModel = viewModel(),
+    authViewModel: AuthViewModel
 ) {
     val context = LocalContext.current
     val userProfile by settingsViewModel.userProfile.observeAsState()
@@ -164,12 +166,6 @@ fun SettingsScreen(
             )
 
             SettingsCard {
-                SettingsItem(
-                    icon = Icons.Default.CloudUpload,
-                    title = "Backup Data",
-                    subtitle = "Backup your plants to cloud",
-                    onClick = { /* Already auto-synced */ }
-                )
                 Divider()
                 SettingsItem(
                     icon = Icons.Default.Delete,
@@ -177,37 +173,6 @@ fun SettingsScreen(
                     subtitle = "Free up storage space",
                     onClick = { showClearCacheDialog = true },
                     iconTint = Color(0xFFD32F2F)
-                )
-            }
-
-            // Section: Support
-            Text(
-                text = "SUPPORT",
-                style = MaterialTheme.typography.labelMedium,
-                color = Color.Gray,
-                modifier = Modifier.padding(start = 4.dp, top = 8.dp)
-            )
-
-            SettingsCard {
-                SettingsItem(
-                    icon = Icons.Default.Help,
-                    title = "Help & Support",
-                    subtitle = "Get help with Bloom",
-                    onClick = { /* TODO */ }
-                )
-                Divider()
-                SettingsItem(
-                    icon = Icons.Default.Email,
-                    title = "Contact Us",
-                    subtitle = "support@bloom.app",
-                    onClick = { /* TODO */ }
-                )
-                Divider()
-                SettingsItem(
-                    icon = Icons.Default.Star,
-                    title = "Rate App",
-                    subtitle = "Rate us on Play Store",
-                    onClick = { /* TODO */ }
                 )
             }
 
@@ -417,16 +382,7 @@ fun LanguageSelectionDialog(
     onSelect: (String) -> Unit
 ) {
     val languages = listOf(
-        "English" to "🇬🇧",
-        "Français" to "🇫🇷",
-        "Español" to "🇪🇸",
-        "Deutsch" to "🇩🇪",
-        "Italiano" to "🇮🇹",
-        "Português" to "🇵🇹",
-        "中文" to "🇨🇳",
-        "日本語" to "🇯🇵",
-        "한국어" to "🇰🇷",
-        "العربية" to "🇸🇦"
+        "English" to "🇬🇧"
     )
 
     AlertDialog(

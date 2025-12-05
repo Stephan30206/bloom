@@ -232,7 +232,7 @@ fun AboutScreen(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "© 2024 Bloom App",
+                    text = "© 2025 Bloom App",
                     fontSize = 12.sp,
                     color = Color.LightGray
                 )

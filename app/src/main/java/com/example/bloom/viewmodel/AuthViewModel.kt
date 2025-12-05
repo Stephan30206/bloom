@@ -28,8 +28,36 @@ class AuthViewModel : ViewModel() {
     private var googleSignInClient: GoogleSignInClient? = null
     private var isGoogleSignInInitialized = false
 
+    // Email de l'utilisateur connecté
+    private val _currentUserEmail = MutableLiveData<String?>()
+    val currentUserEmail: LiveData<String?> = _currentUserEmail
+
+    // État de vérification de l'email
+    private val _isEmailVerified = MutableLiveData<Boolean>()
+    val isEmailVerified: LiveData<Boolean> = _isEmailVerified
+
     init {
         checkAuthStatus()
+
+        // Ajouter un listener pour les changements d'authentification
+        auth.addAuthStateListener { firebaseAuth ->
+            val user = firebaseAuth.currentUser
+            updateUserInfo(user)
+            _authState.value = if (user != null) {
+                AuthState.Authenticated(user.uid)
+            } else {
+                AuthState.Unauthenticated
+            }
+        }
+    }
+
+    // Fonction pour mettre à jour les informations utilisateur
+    private fun updateUserInfo(user: com.google.firebase.auth.FirebaseUser?) {
+        _currentUserEmail.value = user?.email
+        _isEmailVerified.value = user?.isEmailVerified ?: false
+
+        // Log pour debug
+        Log.d("AuthViewModel", "User email: ${user?.email ?: "null"}, verified: ${user?.isEmailVerified ?: false}")
     }
 
     fun initializeGoogleSignIn(context: Context) {
@@ -126,6 +154,8 @@ class AuthViewModel : ViewModel() {
                 val user = authResult.user
                 if (user != null) {
                     Log.d("AuthViewModel", "Firebase auth successful: ${user.uid}")
+                    // Mettre à jour les infos utilisateur
+                    updateUserInfo(user)
                     _authState.value = AuthState.Authenticated(user.uid)
                 } else {
                     _authState.value = AuthState.Error("Firebase user is null")
@@ -140,6 +170,7 @@ class AuthViewModel : ViewModel() {
 
     private fun checkAuthStatus() {
         val user = auth.currentUser
+        updateUserInfo(user)
         _authState.value = if (user != null) {
             AuthState.Authenticated(user.uid)
         } else {
@@ -158,6 +189,7 @@ class AuthViewModel : ViewModel() {
             try {
                 val authResult = auth.createUserWithEmailAndPassword(email, password).await()
                 val user = authResult.user
+                updateUserInfo(user)
                 _authState.value = AuthState.Authenticated(user?.uid ?: "")
             } catch (e: Exception) {
                 _authState.value = AuthState.Error("Sign up failed: ${e.message}")
@@ -176,6 +208,7 @@ class AuthViewModel : ViewModel() {
             try {
                 val authResult = auth.signInWithEmailAndPassword(email, password).await()
                 val user = authResult.user
+                updateUserInfo(user)
                 _authState.value = AuthState.Authenticated(user?.uid ?: "")
             } catch (e: Exception) {
                 _authState.value = AuthState.Error("Login failed: ${e.message}")
@@ -188,6 +221,9 @@ class AuthViewModel : ViewModel() {
             auth.signOut()
             googleSignInClient?.signOut()
             _authState.value = AuthState.Unauthenticated
+            // Réinitialiser les infos utilisateur
+            _currentUserEmail.value = null
+            _isEmailVerified.value = false
         } catch (e: Exception) {
             Log.e("AuthViewModel", "Logout error", e)
         }
@@ -196,6 +232,17 @@ class AuthViewModel : ViewModel() {
     fun clearError() {
         if (_authState.value is AuthState.Error) {
             _authState.value = AuthState.Unauthenticated
+        }
+    }
+
+    // Fonction pour rafraîchir les informations utilisateur (utile après vérification d'email)
+    fun refreshUserInfo() {
+        val user = auth.currentUser
+        user?.reload()?.addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                updateUserInfo(auth.currentUser)
+                Log.d("AuthViewModel", "User info refreshed. Verified: ${auth.currentUser?.isEmailVerified}")
+            }
         }
     }
 }

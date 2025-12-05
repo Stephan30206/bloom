@@ -5,9 +5,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -18,7 +21,6 @@ import com.example.bloom.navigation.Screen
 import com.example.bloom.viewmodel.AuthViewModel
 import com.example.bloom.viewmodel.PlantViewModel
 
-// Sealed class pour les destinations de la bottom navigation
 sealed class BottomNavScreen(
     val route: String,
     val title: String,
@@ -33,7 +35,7 @@ sealed class BottomNavScreen(
     object Scanner : BottomNavScreen(
         route = "scanner",
         title = "Scan",
-        icon = Icons.Default.CameraAlt
+        icon = Icons.Default.Add
     )
 
     object Profile : BottomNavScreen(
@@ -53,7 +55,6 @@ fun MainScreenWithBottomNav(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    // Liste des routes où la bottom nav doit être visible
     val bottomNavRoutes = listOf(
         BottomNavScreen.Home.route,
         BottomNavScreen.Scanner.route,
@@ -62,7 +63,6 @@ fun MainScreenWithBottomNav(
 
     Scaffold(
         bottomBar = {
-            // Afficher la bottom bar seulement sur les écrans principaux
             if (currentRoute in bottomNavRoutes) {
                 NavigationBar(
                     containerColor = Color.White,
@@ -93,7 +93,6 @@ fun MainScreenWithBottomNav(
                             onClick = {
                                 if (currentRoute != screen.route) {
                                     navController.navigate(screen.route) {
-                                        // Éviter l'accumulation de destinations dans le back stack
                                         popUpTo(BottomNavScreen.Home.route) {
                                             saveState = true
                                         }
@@ -120,7 +119,6 @@ fun MainScreenWithBottomNav(
             startDestination = BottomNavScreen.Home.route,
             modifier = Modifier.padding(paddingValues)
         ) {
-            // 🏠 Home - Liste des plantes
             composable(BottomNavScreen.Home.route) {
                 PlantListScreen(
                     navController = navController,
@@ -130,7 +128,6 @@ fun MainScreenWithBottomNav(
                 )
             }
 
-            // 📷 Scanner - Nouvelle découverte
             composable(BottomNavScreen.Scanner.route) {
                 NewDiscoveryScreen(
                     navController = navController,
@@ -138,7 +135,6 @@ fun MainScreenWithBottomNav(
                 )
             }
 
-            // 👤 Profile - Paramètres et profil
             composable(BottomNavScreen.Profile.route) {
                 ProfileScreen(
                     navController = navController,
@@ -147,7 +143,6 @@ fun MainScreenWithBottomNav(
                 )
             }
 
-            // 🌿 Détails de la plante (sans bottom nav)
             composable(Screen.PlantDetail.route) { backStackEntry ->
                 val plantId = backStackEntry.arguments?.getString("plantId") ?: ""
                 PlantDetailScreen(
@@ -157,15 +152,14 @@ fun MainScreenWithBottomNav(
                 )
             }
 
-            // ⚙️ Settings (sans bottom nav)
             composable("settings") {
                 SettingsScreen(
                     navController = navController,
-                    settingsViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+                    settingsViewModel = androidx.lifecycle.viewmodel.compose.viewModel(),
+                    authViewModel = authViewModel
                 )
             }
 
-            // ℹ️ About (sans bottom nav)
             composable("about") {
                 AboutScreen(navController = navController)
             }
@@ -173,7 +167,6 @@ fun MainScreenWithBottomNav(
     }
 }
 
-// 👤 Écran Profile
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
@@ -181,6 +174,9 @@ fun ProfileScreen(
     authViewModel: AuthViewModel,
     userId: String
 ) {
+    val currentUserEmail by authViewModel.currentUserEmail.observeAsState()
+    val isEmailVerified by authViewModel.isEmailVerified.observeAsState(false)
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -200,7 +196,7 @@ fun ProfileScreen(
                 .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Card avec info utilisateur
+            // Card avec info utilisateur - Email au lieu de User ID
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
@@ -209,23 +205,33 @@ fun ProfileScreen(
             ) {
                 Column(
                     modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = "User",
-                        tint = Color(0xFF2E7D32),
-                        modifier = Modifier.size(48.dp)
-                    )
-                    Text(
-                        text = "User ID",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = Color.Gray
-                    )
-                    Text(
-                        text = userId.take(20) + "...",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
+                    Row(
+                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = "User",
+                            tint = Color(0xFF2E7D32),
+                            modifier = Modifier.size(48.dp)
+                        )
+                        Column {
+                            Text(
+                                text = "Account",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = Color.Gray
+                            )
+                            Text(
+                                text = currentUserEmail ?: "Not signed in",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
                 }
             }
 

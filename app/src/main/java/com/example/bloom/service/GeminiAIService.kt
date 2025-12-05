@@ -13,7 +13,7 @@ import java.net.URL
 
 class GeminiAIService {
 
-    private val apiKey = "AIzaSyDkeWhjASW0zpvd5s6maeL2u9x7Vx_42D0"
+    private val apiKey = "AIzaSyDPpQsMjJjleLUcMwQBwppkv8NtRvor6r8"
     private val apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$apiKey"
 
     suspend fun identifyPlantFromImage(bitmap: Bitmap): Pair<String, String> {
@@ -31,28 +31,42 @@ class GeminiAIService {
                             put("parts", JSONArray().apply {
                                 put(JSONObject().apply {
                                     put("text", """
-                                        Your task is to identify ONLY plants or flowers from the image. 
+                                        Your task is to identify plants, flowers, trees, or any botanical elements from the image.
                                         
-                                        IMPORTANT RULES:
-                                        1. If the image contains ANY of these, reply with EXACTLY: "Error: This image does not contain a plant or flower."
-                                           - Animals, insects, birds
-                                           - People, faces, human body parts
-                                           - Buildings, cars, objects
-                                           - Food, fruits (unless shown growing on plant)
-                                           - Text, screens, documents
-                                           - Landscapes without clear plants
-                                           - Furniture, household items
-                                           - Clothes, accessories
-                                           - Sky, clouds without plants
-                                           - Water bodies without plants
-                                           - Rocks, minerals alone
+                                        CRITICAL RULES:
+                                        1. If the image contains NO botanical elements (plants, flowers, leaves, trees, etc.), 
+                                           reply EXACTLY with: "NOT_A_PLANT: This image does not contain plant material"
                                         
-                                        2. If it's a plant or flower:
-                                           - First line: "Name: [common or scientific name]"
-                                           - Second line: "Fact: [two interesting sentences about it]"
+                                        2. If it contains ANY plant material, provide a detailed description:
+                                           - First line: "Name: [specific common name or scientific name]"
+                                           - Second line: "Fact: [detailed botanical description]"
                                         
-                                        Respond in English. Be strict - only identify actual plants or flowers.
-
+                                        FORMATTING GUIDELINES FOR THE FACT:
+                                        - Write 2-4 complete sentences (minimum 80 words)
+                                        - Include botanical characteristics, habitat, and interesting facts
+                                        - Use markdown formatting for readability:
+                                          * **Bold** for important terms (scientific names, key features)
+                                          * *Italic* for emphasis on unique characteristics
+                                          * Use bullet points (•) for listing features
+                                          * Use line breaks for better readability
+                                        
+                                        EXAMPLE FORMAT:
+                                        Name: Rosa damascena (Damask Rose)
+                                        Fact: The **Damask Rose** is one of the most *fragrant* roses in the world, native to the Middle East. Key features include:
+                                        • **Petals**: 30-40 layered petals in shades of pink to red
+                                        • **Height**: Grows 1.5-2 meters tall as a shrub
+                                        • **Bloom**: Flowers appear in late spring and early summer
+                                        
+                                        This rose has been cultivated for over 2,000 years and is the primary source of **rose oil** used in perfumery. It thrives in well-drained soil with full sun exposure and is remarkably drought-resistant once established.
+                                        
+                                        Be specific, detailed, and use proper markdown formatting. Include:
+                                        - Scientific classification when possible
+                                        - Physical characteristics (size, color, shape)
+                                        - Growing conditions and habitat
+                                        - Historical or cultural significance
+                                        - Unique features or interesting facts
+                                        
+                                        Respond in English with proper markdown formatting.
                                     """.trimIndent())
                                 })
                                 put(JSONObject().apply {
@@ -212,54 +226,57 @@ class GeminiAIService {
             val parts = content.getJSONArray("parts")
             val text = parts.getJSONObject(0).getString("text")
 
-            Log.d("GeminiAI", "🔍 Received text:\n$text")
+            Log.d("GeminiAI", "📝 Received text:\n$text")
 
             // VÉRIFICATION SI C'EST UNE PLANTE
-            val isNotPlant = text.contains("Error: This image does not contain a plant or flower", ignoreCase = true) ||
-                    text.contains("not a plant", ignoreCase = true) ||
-                    text.contains("pas une plante", ignoreCase = true) ||
-                    text.contains("no plant", ignoreCase = true) ||
-                    text.contains("does not contain", ignoreCase = true)
+            val isNotPlant = text.contains("NOT_A_PLANT", ignoreCase = true) ||
+                    (text.contains("not", ignoreCase = true) &&
+                            text.contains("plant", ignoreCase = true) &&
+                            text.contains("contain", ignoreCase = true))
 
             if (isNotPlant) {
-                // Retourner un message spécial pour indiquer que ce n'est pas une plante
                 Log.d("GeminiAI", "Image is not a plant")
-                return Pair("NOT_A_PLANT", "Cette image ne semble pas contenir de plante ou de fleur")
+                return Pair("NOT_A_PLANT", "This image does not appear to contain a plant or flower")
             }
 
-            // Continuer avec l'extraction normale du nom et du fait
+            // Extraction du nom et du fait
             var name = ""
             var fact = ""
 
-            text.lines().forEach { line ->
-                val trimmedLine = line.trim()
+            val lines = text.lines()
+            for (i in lines.indices) {
+                val line = lines[i].trim()
                 when {
-                    trimmedLine.startsWith("Name:", ignoreCase = true) -> {
-                        name = trimmedLine.substringAfter(":").trim()
+                    line.startsWith("Name:", ignoreCase = true) -> {
+                        name = line.substringAfter(":").trim()
                     }
-                    trimmedLine.startsWith("Fact:", ignoreCase = true) -> {
-                        fact = trimmedLine.substringAfter(":").trim()
+                    line.startsWith("Fact:", ignoreCase = true) -> {
+                        // Prendre toutes les lignes suivantes comme fait
+                        fact = lines.drop(i).joinToString("\n") { it.trim() }
+                            .substringAfter(":").trim()
+                        break
                     }
                 }
             }
 
+            // Fallback si le format n'est pas respecté
             if (name.isEmpty() && fact.isEmpty() && text.isNotBlank()) {
-                val lines = text.trim().lines().filter { it.isNotBlank() }
-                if (lines.isNotEmpty()) {
-                    name = lines.firstOrNull() ?: "Plant identified"
-                    fact = lines.drop(1).joinToString(" ").take(200)
+                val cleanLines = lines.filter { it.isNotBlank() }
+                if (cleanLines.isNotEmpty()) {
+                    name = cleanLines.firstOrNull() ?: "Plant identified"
+                    fact = cleanLines.drop(1).joinToString("\n")
                 }
             }
 
             if (name.isEmpty() || fact.isEmpty()) {
-                Log.w("GeminiAI", "Incomplete format - Name: '$name', Fact: '$fact'")
+                Log.w("GeminiAI", "Incomplete format - Name: '$name', Fact: '${fact.take(50)}...'")
                 Pair(
                     name.ifEmpty { "Partial identification" },
-                    fact.ifEmpty { text.take(200) }
+                    fact.ifEmpty { text.take(500) }
                 )
             } else {
-                Log.d("GeminiAI", "Name: $name")
-                Log.d("GeminiAI", "Fact: ${fact.take(50)}...")
+                Log.d("GeminiAI", "✅ Name: $name")
+                Log.d("GeminiAI", "✅ Fact: ${fact.take(100)}...")
                 Pair(name, fact)
             }
 
